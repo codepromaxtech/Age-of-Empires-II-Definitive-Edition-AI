@@ -470,6 +470,7 @@
 ; Build palisade walls at perimeter 1 (inner)
 (defrule
     (current-age >= feudal-age)
+    (wood-amount > 150)
     (can-build-wall 1 palisade-wall)
 =>
     (set-strategic-number sn-gate-type-for-wall 0)
@@ -479,6 +480,7 @@
 ; Build gate at perimeter 1
 (defrule
     (current-age >= feudal-age)
+    (wood-amount > 150)
     (can-build-gate 1)
 =>
     (set-strategic-number sn-gate-type-for-wall 0)
@@ -496,6 +498,7 @@
 ; Build stone walls at perimeter 2 (outer)
 (defrule
     (current-age >= castle-age)
+    (stone-amount > 150)
     (can-build-wall 2 stone-wall)
 =>
     (set-strategic-number sn-gate-type-for-wall 1)
@@ -505,16 +508,19 @@
 ; Build gate at perimeter 2
 (defrule
     (current-age >= castle-age)
+    (stone-amount > 150)
     (can-build-gate 2)
 =>
     (set-strategic-number sn-gate-type-for-wall 1)
     (build-gate 2)
 )
 
-; --- Towers ---
+; --- Towers (Only build when economy is stable) ---
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total watch-tower < 6)
+    (wood-amount > 200)
+    (stone-amount > 150)
     (can-build watch-tower)
 =>
     (build watch-tower)
@@ -523,6 +529,8 @@
 (defrule
     (current-age >= castle-age)
     (building-type-count-total watch-tower < 12)
+    (wood-amount > 250)
+    (stone-amount > 200)
     (can-build watch-tower)
 =>
     (build watch-tower)
@@ -531,24 +539,38 @@
 (defrule
     (current-age >= imperial-age)
     (building-type-count-total watch-tower < 20)
+    (wood-amount > 300)
+    (stone-amount > 250)
     (can-build watch-tower)
 =>
     (build watch-tower)
 )
 
-; --- Bombard Towers (Ultimate plugging) ---
+; --- Bombard Towers (Ultimate plugging, high cost) ---
 (defrule
     (current-age >= imperial-age)
     (building-type-count-total bombard-tower < 10)
+    (stone-amount > 300)
+    (gold-amount > 300)
     (can-build bombard-tower)
 =>
     (build bombard-tower)
 )
 
-; --- Castles ---
+; --- Castles (Massive stone investment) ---
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle < 1)
+    (can-build castle)
+=>
+    (build castle)
+)
+
 (defrule
     (current-age >= castle-age)
     (building-type-count-total castle < 3)
+    (stone-amount > 700)
+    (wood-amount > 300)
     (can-build castle)
 =>
     (build castle)
@@ -557,6 +579,8 @@
 (defrule
     (current-age >= imperial-age)
     (building-type-count-total castle < 6)
+    (stone-amount > 800)
+    (wood-amount > 400)
     (can-build castle)
 =>
     (build castle)
