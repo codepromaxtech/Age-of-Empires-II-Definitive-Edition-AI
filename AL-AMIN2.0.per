@@ -1243,6 +1243,7 @@
 )
 
 ; --- Dock (Naval Upgrades) ---
+; NOTE: Only using verified tech names. Line-based training handles upgrades automatically.
 (defrule
     (can-research ri-careening)
 =>
@@ -1271,36 +1272,6 @@
     (can-research ri-galleon)
 =>
     (research ri-galleon)
-)
-
-(defrule
-    (can-research ri-fire-ship)
-=>
-    (research ri-fire-ship)
-)
-
-(defrule
-    (can-research ri-fast-fire-ship)
-=>
-    (research ri-fast-fire-ship)
-)
-
-(defrule
-    (can-research ri-demolition-ship)
-=>
-    (research ri-demolition-ship)
-)
-
-(defrule
-    (can-research ri-heavy-demolition-ship)
-=>
-    (research ri-heavy-demolition-ship)
-)
-
-(defrule
-    (can-research ri-elite-cannon-galleon)
-=>
-    (research ri-elite-cannon-galleon)
 )
 
 ; ============================================================
