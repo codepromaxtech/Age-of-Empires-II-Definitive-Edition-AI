@@ -514,7 +514,7 @@
 ; --- Towers ---
 (defrule
     (current-age >= feudal-age)
-    (building-type-count-total watch-tower < 4)
+    (building-type-count-total watch-tower < 6)
     (can-build watch-tower)
 =>
     (build watch-tower)
@@ -522,7 +522,7 @@
 
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total watch-tower < 8)
+    (building-type-count-total watch-tower < 12)
     (can-build watch-tower)
 =>
     (build watch-tower)
@@ -530,16 +530,25 @@
 
 (defrule
     (current-age >= imperial-age)
-    (building-type-count-total watch-tower < 12)
+    (building-type-count-total watch-tower < 20)
     (can-build watch-tower)
 =>
     (build watch-tower)
 )
 
+; --- Bombard Towers (Ultimate plugging) ---
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total bombard-tower < 10)
+    (can-build bombard-tower)
+=>
+    (build bombard-tower)
+)
+
 ; --- Castles ---
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total castle < 2)
+    (building-type-count-total castle < 3)
     (can-build castle)
 =>
     (build castle)
@@ -547,7 +556,7 @@
 
 (defrule
     (current-age >= imperial-age)
-    (building-type-count-total castle < 4)
+    (building-type-count-total castle < 6)
     (can-build castle)
 =>
     (build castle)
