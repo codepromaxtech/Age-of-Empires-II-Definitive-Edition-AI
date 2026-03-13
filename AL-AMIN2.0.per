@@ -52,7 +52,7 @@
     (true)
 =>
     ; --- Town Layout & Safe Zone (Structured Grid Building) ---
-    (set-strategic-number sn-maximum-town-size 20)
+    (set-strategic-number sn-maximum-town-size 30)
     (set-strategic-number sn-minimum-town-size 14)
     (set-strategic-number sn-safe-town-size 38)
     (set-strategic-number sn-placement-zone-size 7)
@@ -187,7 +187,6 @@
 
 (defrule
     (building-type-count-total mill < 1)
-    (resource-found food)
     (can-build mill)
 =>
     (build mill)
@@ -267,13 +266,133 @@
     (build farm)
 )
 
-; Reseed dead farms
+; ============================================================
+; PHASE 4.5: WATER / NAVAL EXPANSION
+; ============================================================
+
 (defrule
-    (idle-farm-count > 0)
-    (can-build farm)
+    (current-age == dark-age)
+    (building-type-count-total dock < 1)
+    (can-build dock)
 =>
-    (build farm)
+    (build dock)
 )
+
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total dock < 2)
+    (can-build dock)
+=>
+    (build dock)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total dock < 3)
+    (can-build dock)
+=>
+    (build dock)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock < 4)
+    (can-build dock)
+=>
+    (build dock)
+)
+
+(defrule
+    (current-age == dark-age)
+    (unit-type-count-total fishing-ship < 5)
+    (can-train fishing-ship)
+=>
+    (train fishing-ship)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total fishing-ship < 10)
+    (can-train fishing-ship)
+=>
+    (train fishing-ship)
+)
+
+; --- Feudal Age Naval Military ---
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total fire-galley < 3)
+    (can-train fire-galley)
+=>
+    (train fire-galley)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total galley-line < 2)
+    (can-train galley-line)
+=>
+    (train galley-line)
+)
+
+; --- Castle Age Naval Military ---
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total fire-ship < 5)
+    (can-train fire-ship)
+=>
+    (train fire-ship)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total war-galley < 5)
+    (can-train war-galley)
+=>
+    (train war-galley)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total demolition-ship < 2)
+    (can-train demolition-ship)
+=>
+    (train demolition-ship)
+)
+
+; --- Imperial Age Naval Military ---
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total fast-fire-ship < 10)
+    (can-train fast-fire-ship)
+=>
+    (train fast-fire-ship)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total galleon < 10)
+    (can-train galleon)
+=>
+    (train galleon)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total cannon-galleon < 3)
+    (can-train cannon-galleon)
+=>
+    (train cannon-galleon)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total heavy-demolition-ship < 4)
+    (can-train heavy-demolition-ship)
+=>
+    (train heavy-demolition-ship)
+)
+
 
 ; ============================================================
 ; PHASE 6: AGE TRANSITIONS
@@ -1122,6 +1241,55 @@
     (research ri-sappers)
 )
 
+; --- Dock (Naval Upgrades) ---
+(defrule
+    (can-research ri-careening)
+=>
+    (research ri-careening)
+)
+
+(defrule
+    (can-research ri-dry-dock)
+=>
+    (research ri-dry-dock)
+)
+
+(defrule
+    (can-research ri-shipwright)
+=>
+    (research ri-shipwright)
+)
+
+(defrule
+    (can-research ri-war-galley)
+=>
+    (research ri-war-galley)
+)
+
+(defrule
+    (can-research ri-galleon)
+=>
+    (research ri-galleon)
+)
+
+(defrule
+    (can-research ri-fast-fire-ship)
+=>
+    (research ri-fast-fire-ship)
+)
+
+(defrule
+    (can-research ri-heavy-demo-ship)
+=>
+    (research ri-heavy-demo-ship)
+)
+
+(defrule
+    (can-research ri-cannon-galleon)
+=>
+    (research ri-cannon-galleon)
+)
+
 ; ============================================================
 ; PHASE 12: MILITARY PRODUCTION (Standby Garrison Force)
 ; ============================================================
@@ -1160,10 +1328,10 @@
     (train archer-line)
 )
 
-; --- Skirmishers: counter enemy archers ---
+; --- Skirmishers: zero-gold counter archers ---
 (defrule
     (current-age >= feudal-age)
-    (unit-type-count-total skirmisher-line < 6)
+    (unit-type-count-total skirmisher-line < 10)
     (can-train skirmisher-line)
 =>
     (train skirmisher-line)
@@ -1171,16 +1339,24 @@
 
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total skirmisher-line < 12)
+    (unit-type-count-total skirmisher-line < 25)
     (can-train skirmisher-line)
 =>
     (train skirmisher-line)
 )
 
-; --- Spearmen / Pikemen: anti-cavalry defense ---
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total skirmisher-line < 40)
+    (can-train skirmisher-line)
+=>
+    (train skirmisher-line)
+)
+
+; --- Spearmen / Halberdiers: zero-gold anti-cavalry meatshield ---
 (defrule
     (current-age >= feudal-age)
-    (unit-type-count-total spearman-line < 6)
+    (unit-type-count-total spearman-line < 10)
     (can-train spearman-line)
 =>
     (train spearman-line)
@@ -1188,10 +1364,35 @@
 
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total spearman-line < 15)
+    (unit-type-count-total spearman-line < 25)
     (can-train spearman-line)
 =>
     (train spearman-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total spearman-line < 40)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+; --- Light Cavalry / Hussars: zero-gold raiding & meatshield ---
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total scout-cavalry-line < 10)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total scout-cavalry-line < 25)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
 )
 
 ; --- Cavalry Archers: mobile ranged DPS behind walls ---
@@ -1362,30 +1563,54 @@
 )
 
 ; ============================================================
-; PHASE 14: EXTREME TURTLE & FINAL OUTBREAK
+; PHASE 14: DEFENSIVE COMBAT LOGIC
 ; ============================================================
 
-; The AI will NEVER launch an attack or retaliate across the map
-; until it has amassed an absolutely unstoppable maximum-population army.
-; It will simply sit behind its walls and defend its perimeter.
-
-; --- Final Outbreak: Massive apocalyptic push ---
+; --- Retaliation: small force counter when attacked ---
 (defrule
-    (current-age >= imperial-age)
-    (military-population >= 150)
+    (town-under-attack)
+    (military-population >= 10)
 =>
-    (set-strategic-number sn-number-attack-groups 6)
-    (set-strategic-number sn-minimum-attack-group-size 20)
-    (set-strategic-number sn-maximum-attack-group-size 40)
-    (set-strategic-number sn-maximum-town-size 255)
-    (set-strategic-number sn-percent-attack-soldiers 80)
-    (chat-to-all "AL-AMIN2.0: Maximum capacity reached. Commencing inevitable march.")
+    (set-strategic-number sn-number-attack-groups 1)
+    (set-strategic-number sn-minimum-attack-group-size 8)
+    (set-strategic-number sn-maximum-attack-group-size 20)
+    (set-strategic-number sn-maximum-town-size 60)
+    (set-strategic-number sn-percent-attack-soldiers 50)
+    (chat-to-all "AL-AMIN2.0: Defending the homeland!")
     (attack-now)
 )
 
-; --- Reset to pure turtle mode if population drops ---
+; --- Full retaliation: massive army unleashed ---
 (defrule
-    (military-population < 100)
+    (town-under-attack)
+    (military-population >= 40)
+=>
+    (set-strategic-number sn-number-attack-groups 3)
+    (set-strategic-number sn-minimum-attack-group-size 12)
+    (set-strategic-number sn-maximum-attack-group-size 30)
+    (set-strategic-number sn-maximum-town-size 150)
+    (set-strategic-number sn-percent-attack-soldiers 65)
+    (chat-to-all "AL-AMIN2.0: Unleashing the full garrison!")
+    (attack-now)
+)
+
+; --- Overwhelming force: counter-offensive ---
+(defrule
+    (town-under-attack)
+    (military-population >= 80)
+=>
+    (set-strategic-number sn-number-attack-groups 5)
+    (set-strategic-number sn-minimum-attack-group-size 15)
+    (set-strategic-number sn-maximum-attack-group-size 40)
+    (set-strategic-number sn-maximum-town-size 255)
+    (set-strategic-number sn-percent-attack-soldiers 80)
+    (chat-to-all "AL-AMIN2.0: Total war. Annihilating threat.")
+    (attack-now)
+)
+
+; --- Reset to defensive posture when no longer attacked ---
+(defrule
+    (not (town-under-attack))
     (strategic-number sn-number-attack-groups > 0)
 =>
     (set-strategic-number sn-number-attack-groups 0)
@@ -1394,7 +1619,6 @@
     (set-strategic-number sn-maximum-town-size 80)
     (set-strategic-number sn-percent-attack-soldiers 0)
     (up-reset-attack-now)
-    (chat-to-all "AL-AMIN2.0: Halting advance. Rebuilding domestic garrison.")
 )
 
 ; ============================================================
