@@ -1262,10 +1262,10 @@
 ; --- Hussars: rapid counter-raiding force ---
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total light-cavalry-line < 15)
-    (can-train light-cavalry-line)
+    (unit-type-count-total scout-cavalry-line < 15)
+    (can-train scout-cavalry-line)
 =>
-    (train light-cavalry-line)
+    (train scout-cavalry-line)
 )
 
 ; --- Hand Cannoneers: powerful ranged infantry ---
