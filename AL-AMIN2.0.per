@@ -472,6 +472,7 @@
     (current-age >= feudal-age)
     (can-build-wall 1 palisade-wall)
 =>
+    (set-strategic-number sn-gate-type-for-wall 0)
     (build-wall 1 palisade-wall)
 )
 
@@ -480,6 +481,7 @@
     (current-age >= feudal-age)
     (can-build-gate 1)
 =>
+    (set-strategic-number sn-gate-type-for-wall 0)
     (build-gate 1)
 )
 
@@ -487,7 +489,6 @@
     (current-age >= castle-age)
 =>
     (enable-wall-placement 2)
-    (set-strategic-number sn-gate-type-for-wall 1)
     (chat-to-all "AL-AMIN2.0: Upgrading to stone walls...")
     (disable-self)
 )
@@ -497,6 +498,7 @@
     (current-age >= castle-age)
     (can-build-wall 2 stone-wall)
 =>
+    (set-strategic-number sn-gate-type-for-wall 1)
     (build-wall 2 stone-wall)
 )
 
@@ -505,6 +507,7 @@
     (current-age >= castle-age)
     (can-build-gate 2)
 =>
+    (set-strategic-number sn-gate-type-for-wall 1)
     (build-gate 2)
 )
 
