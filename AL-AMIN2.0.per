@@ -50,10 +50,12 @@
 (defrule
     (true)
 =>
-    ; --- Town Layout & Safe Zone ---
+    ; --- Town Layout & Safe Zone (Structured Grid Building) ---
     (set-strategic-number sn-maximum-town-size 20)
     (set-strategic-number sn-minimum-town-size 12)
     (set-strategic-number sn-safe-town-size 30)
+    (set-strategic-number sn-placement-zone-size 7)
+    (set-strategic-number sn-placement-fail-delta 2)
     (set-strategic-number sn-camp-max-distance 20)
     (set-strategic-number sn-mill-max-distance 20)
     (set-strategic-number sn-lumber-camp-max-distance 25)
