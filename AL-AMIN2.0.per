@@ -319,62 +319,71 @@
 )
 
 ; --- Feudal Age Naval Military ---
+; Using -line names auto-trains best available upgrade (e.g. galley → war galley → galleon)
 (defrule
     (current-age >= feudal-age)
-    (unit-type-count-total fire-galley < 3)
-    (can-train fire-galley)
-=>
-    (train fire-galley)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (unit-type-count-total galley-line < 2)
+    (unit-type-count-total galley-line < 3)
     (can-train galley-line)
 =>
     (train galley-line)
 )
 
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total fire-ship-line < 3)
+    (can-train fire-ship-line)
+=>
+    (train fire-ship-line)
+)
+
 ; --- Castle Age Naval Military ---
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total fire-ship < 5)
-    (can-train fire-ship)
+    (unit-type-count-total galley-line < 8)
+    (can-train galley-line)
 =>
-    (train fire-ship)
+    (train galley-line)
 )
 
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total war-galley < 5)
-    (can-train war-galley)
+    (unit-type-count-total fire-ship-line < 5)
+    (can-train fire-ship-line)
 =>
-    (train war-galley)
+    (train fire-ship-line)
 )
 
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total demolition-ship < 2)
-    (can-train demolition-ship)
+    (unit-type-count-total demolition-ship-line < 2)
+    (can-train demolition-ship-line)
 =>
-    (train demolition-ship)
+    (train demolition-ship-line)
 )
 
 ; --- Imperial Age Naval Military ---
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total fast-fire-ship < 10)
-    (can-train fast-fire-ship)
+    (unit-type-count-total galley-line < 15)
+    (can-train galley-line)
 =>
-    (train fast-fire-ship)
+    (train galley-line)
 )
 
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total galleon < 10)
-    (can-train galleon)
+    (unit-type-count-total fire-ship-line < 10)
+    (can-train fire-ship-line)
 =>
-    (train galleon)
+    (train fire-ship-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total demolition-ship-line < 4)
+    (can-train demolition-ship-line)
+=>
+    (train demolition-ship-line)
 )
 
 (defrule
@@ -383,14 +392,6 @@
     (can-train cannon-galleon)
 =>
     (train cannon-galleon)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total heavy-demolition-ship < 4)
-    (can-train heavy-demolition-ship)
-=>
-    (train heavy-demolition-ship)
 )
 
 
@@ -1273,21 +1274,33 @@
 )
 
 (defrule
+    (can-research ri-fire-ship)
+=>
+    (research ri-fire-ship)
+)
+
+(defrule
     (can-research ri-fast-fire-ship)
 =>
     (research ri-fast-fire-ship)
 )
 
 (defrule
-    (can-research ri-heavy-demo-ship)
+    (can-research ri-demolition-ship)
 =>
-    (research ri-heavy-demo-ship)
+    (research ri-demolition-ship)
 )
 
 (defrule
-    (can-research ri-cannon-galleon)
+    (can-research ri-heavy-demolition-ship)
 =>
-    (research ri-cannon-galleon)
+    (research ri-heavy-demolition-ship)
+)
+
+(defrule
+    (can-research ri-elite-cannon-galleon)
+=>
+    (research ri-elite-cannon-galleon)
 )
 
 ; ============================================================
