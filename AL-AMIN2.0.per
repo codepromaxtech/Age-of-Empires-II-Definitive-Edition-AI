@@ -44,7 +44,12 @@
     (set-strategic-number sn-minimum-boar-hunt-group-size 3)
     (set-strategic-number sn-minimum-number-hunters 4)
     (set-strategic-number sn-livestock-to-town-center 1)
+    (disable-self)
+)
 
+(defrule
+    (true)
+=>
     ; --- Town Layout & Safe Zone ---
     (set-strategic-number sn-maximum-town-size 20)
     (set-strategic-number sn-minimum-town-size 12)
@@ -76,7 +81,12 @@
     (set-strategic-number sn-defense-distance 8)
     (set-strategic-number sn-sentry-distance 10)
     (set-strategic-number sn-sentry-distance-variation 2)
+    (disable-self)
+)
 
+(defrule
+    (true)
+=>
     ; --- Attack Intelligence & Patrol ---
     (set-strategic-number sn-attack-intelligence 1)
     (set-strategic-number sn-enable-patrol-attack 1)
