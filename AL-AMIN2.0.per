@@ -1,0 +1,1511 @@
+; ============================================================
+; AL-AMIN2.0 - Age of Empires II: Definitive Edition AI
+; Strategy: Defensive Fortress with Retaliatory Counter-Attack
+; ============================================================
+
+; --- CONSTANTS ---
+(defconst gl-dark-age-vils 22)
+(defconst gl-feudal-age-vils 40)
+(defconst gl-castle-age-vils 100)
+(defconst gl-imperial-age-vils 130)
+
+; ============================================================
+; PHASE 1: INITIALIZATION
+; ============================================================
+
+(defrule
+    (true)
+=>
+    ; --- Building System ---
+    (set-strategic-number sn-enable-new-building-system 1)
+    (set-strategic-number sn-percent-building-cancellation 20)
+    (set-strategic-number sn-cap-civilian-builders 4)
+
+    ; --- Training & Research Queuing (queue units/techs faster) ---
+    (set-strategic-number sn-enable-training-queue 2)
+    (set-strategic-number sn-enable-research-queue 1)
+
+    ; --- Exploration ---
+    (set-strategic-number sn-total-number-explorers 1)
+    (set-strategic-number sn-number-explore-groups 1)
+    (set-strategic-number sn-initial-exploration-required 0)
+    (set-strategic-number sn-percent-exploration-required 50)
+    (set-strategic-number sn-home-exploration-time 300)
+
+    ; --- Economy (Dark Age: heavy food) ---
+    (set-strategic-number sn-food-gatherer-percentage 60)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 10)
+    (set-strategic-number sn-percent-civilian-gatherers 100)
+
+    ; --- Boar Hunting & Foraging ---
+    (set-strategic-number sn-enable-boar-hunting 2)
+    (set-strategic-number sn-minimum-boar-hunt-group-size 3)
+    (set-strategic-number sn-minimum-number-hunters 4)
+    (set-strategic-number sn-livestock-to-town-center 1)
+
+    ; --- Town Layout & Safe Zone ---
+    (set-strategic-number sn-maximum-town-size 20)
+    (set-strategic-number sn-minimum-town-size 12)
+    (set-strategic-number sn-safe-town-size 30)
+    (set-strategic-number sn-camp-max-distance 20)
+    (set-strategic-number sn-mill-max-distance 20)
+    (set-strategic-number sn-lumber-camp-max-distance 25)
+    (set-strategic-number sn-mining-camp-max-distance 25)
+
+    ; --- Dropsite Optimization ---
+    (set-strategic-number sn-food-dropsite-distance 4)
+    (set-strategic-number sn-wood-dropsite-distance 4)
+    (set-strategic-number sn-gold-dropsite-distance 4)
+    (set-strategic-number sn-stone-dropsite-distance 4)
+    (set-strategic-number sn-dropsite-separation-distance 8)
+
+    ; --- Building Repair ---
+    (set-strategic-number sn-object-repair-level 1)
+
+    ; --- Defensive Posture (NO unprovoked attacks) ---
+    (set-strategic-number sn-percent-enemy-sighted-response 100)
+    (set-strategic-number sn-enemy-sighted-response-distance 10)
+    (set-strategic-number sn-number-attack-groups 0)
+    (set-strategic-number sn-minimum-attack-group-size 20)
+    (set-strategic-number sn-maximum-attack-group-size 40)
+    (set-strategic-number sn-number-defend-groups 3)
+    (set-strategic-number sn-minimum-defend-group-size 5)
+    (set-strategic-number sn-maximum-defend-group-size 20)
+    (set-strategic-number sn-defense-distance 8)
+    (set-strategic-number sn-sentry-distance 10)
+    (set-strategic-number sn-sentry-distance-variation 2)
+
+    ; --- Attack Intelligence & Patrol ---
+    (set-strategic-number sn-attack-intelligence 1)
+    (set-strategic-number sn-enable-patrol-attack 1)
+    (set-strategic-number sn-initial-attack-delay 0)
+    (set-strategic-number sn-initial-attack-delay-type 0)
+    (set-strategic-number sn-ignore-attack-group-under-attack 1)
+
+    ; --- Garrison Control ---
+    (set-strategic-number sn-maximum-garrison-fill 15)
+    (set-strategic-number sn-number-garrison-units 5)
+
+    ; --- Idle Soldier Management ---
+    (set-strategic-number sn-gather-idle-soldiers-at-center 1)
+    (set-strategic-number sn-gather-defense-units 1)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
+    (set-strategic-number sn-number-civilian-militia 6)
+
+    ; --- Difficulty: consistent behavior at all levels ---
+    (set-strategic-number sn-do-not-scale-for-difficulty-level 1)
+    (set-strategic-number sn-easiest-reaction-percentage 100)
+    (set-strategic-number sn-easier-reaction-percentage 100)
+
+    ; --- Cooperative Play (Team games) ---
+    (set-strategic-number sn-coop-share-information 1)
+    (set-strategic-number sn-coop-share-attacking 1)
+
+    ; --- Advanced Building Targeting (defensive focus) ---
+    (set-strategic-number sn-building-targeting-mode 1)
+    (set-strategic-number sn-wall-targeting-mode 1)
+
+    (disable-self)
+)
+
+; ============================================================
+; PHASE 2: VILLAGER PRODUCTION (Zero Idle Time)
+; ============================================================
+
+(defrule
+    (current-age == dark-age)
+    (unit-type-count-total villager < gl-dark-age-vils)
+    (can-train villager)
+=>
+    (train villager)
+)
+
+(defrule
+    (current-age == feudal-age)
+    (unit-type-count-total villager < gl-feudal-age-vils)
+    (can-train villager)
+=>
+    (train villager)
+)
+
+(defrule
+    (current-age == castle-age)
+    (unit-type-count-total villager < gl-castle-age-vils)
+    (can-train villager)
+=>
+    (train villager)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total villager < gl-imperial-age-vils)
+    (can-train villager)
+=>
+    (train villager)
+)
+
+; ============================================================
+; PHASE 3: HOUSE CONSTRUCTION
+; ============================================================
+
+(defrule
+    (housing-headroom < 5)
+    (population-headroom > 0)
+    (can-build house)
+=>
+    (build house)
+)
+
+; ============================================================
+; PHASE 4: ECONOMIC BUILDINGS
+; ============================================================
+
+; --- Dark Age Essentials ---
+(defrule
+    (building-type-count-total lumber-camp < 1)
+    (resource-found wood)
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
+)
+
+(defrule
+    (building-type-count-total mill < 1)
+    (resource-found food)
+    (can-build mill)
+=>
+    (build mill)
+)
+
+; Barracks in Dark Age is REQUIRED as a prerequisite for Feudal Age
+(defrule
+    (current-age == dark-age)
+    (building-type-count-total barracks < 1)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+; --- Additional Economic Buildings (scaling) ---
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total lumber-camp < 2)
+    (resource-found wood)
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total mining-camp < 2)
+    (resource-found gold)
+    (can-build mining-camp)
+=>
+    (build mining-camp)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total lumber-camp < 3)
+    (resource-found wood)
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
+)
+
+; ============================================================
+; PHASE 5: FARMS (auto-seed)
+; ============================================================
+
+(defrule
+    (current-age == dark-age)
+    (building-type-count-total mill > 0)
+    (building-type-count-total farm < 6)
+    (can-build farm)
+=>
+    (build farm)
+)
+
+(defrule
+    (current-age == feudal-age)
+    (building-type-count-total farm < 14)
+    (can-build farm)
+=>
+    (build farm)
+)
+
+(defrule
+    (current-age == castle-age)
+    (building-type-count-total farm < 28)
+    (can-build farm)
+=>
+    (build farm)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total farm < 40)
+    (can-build farm)
+=>
+    (build farm)
+)
+
+; Reseed dead farms
+(defrule
+    (idle-farm-count > 0)
+    (can-build farm)
+=>
+    (build farm)
+)
+
+; ============================================================
+; PHASE 6: AGE TRANSITIONS
+; ============================================================
+
+(defrule
+    (can-research feudal-age)
+=>
+    (research feudal-age)
+    (chat-to-all "AL-AMIN2.0: Advancing to Feudal Age...")
+)
+
+(defrule
+    (can-research castle-age)
+=>
+    (research castle-age)
+    (chat-to-all "AL-AMIN2.0: Advancing to Castle Age...")
+)
+
+(defrule
+    (can-research imperial-age)
+=>
+    (research imperial-age)
+    (chat-to-all "AL-AMIN2.0: Advancing to Imperial Age...")
+)
+
+; ============================================================
+; PHASE 7: RESOURCE ALLOCATION PER AGE
+; ============================================================
+
+(defrule
+    (current-age == feudal-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 45)
+    (set-strategic-number sn-wood-gatherer-percentage 35)
+    (set-strategic-number sn-gold-gatherer-percentage 10)
+    (set-strategic-number sn-stone-gatherer-percentage 10)
+    (set-strategic-number sn-maximum-town-size 30)
+    (disable-self)
+)
+
+(defrule
+    (current-age == castle-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 35)
+    (set-strategic-number sn-wood-gatherer-percentage 25)
+    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-stone-gatherer-percentage 15)
+    (set-strategic-number sn-maximum-town-size 50)
+    (disable-self)
+)
+
+(defrule
+    (current-age >= imperial-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 35)
+    (set-strategic-number sn-wood-gatherer-percentage 20)
+    (set-strategic-number sn-gold-gatherer-percentage 30)
+    (set-strategic-number sn-stone-gatherer-percentage 15)
+    (set-strategic-number sn-maximum-town-size 80)
+    (disable-self)
+)
+
+; ============================================================
+; PHASE 8: MILITARY BUILDINGS
+; ============================================================
+
+; --- Feudal Age ---
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total archery-range < 1)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total blacksmith < 1)
+    (can-build blacksmith)
+=>
+    (build blacksmith)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total barracks < 2)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+; --- Castle Age ---
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total archery-range < 3)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total stable < 1)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total siege-workshop < 1)
+    (can-build siege-workshop)
+=>
+    (build siege-workshop)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total university < 1)
+    (can-build university)
+=>
+    (build university)
+)
+
+; --- Additional Town Centers (Economic Boom) ---
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total town-center < 2)
+    (can-build town-center)
+=>
+    (build town-center)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total town-center < 3)
+    (can-build town-center)
+=>
+    (build town-center)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total town-center < 4)
+    (can-build town-center)
+=>
+    (build town-center)
+)
+
+; --- Imperial Age ---
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total barracks < 4)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total archery-range < 5)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total stable < 2)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total siege-workshop < 2)
+    (can-build siege-workshop)
+=>
+    (build siege-workshop)
+)
+
+; ============================================================
+; PHASE 9: BEAUTIFUL FORTRESS - WALLS, TOWERS, CASTLES
+; ============================================================
+
+; --- Walls (enable palisade in Feudal, stone in Castle) ---
+(defrule
+    (current-age == feudal-age)
+=>
+    (enable-wall-placement 1)
+    (enable-wall-placement 2)
+    (chat-to-all "AL-AMIN2.0: Fortifying the perimeter with palisades...")
+    (disable-self)
+)
+
+; Build palisade walls at perimeter 1 (inner)
+(defrule
+    (current-age >= feudal-age)
+    (can-build-wall 1 palisade-wall)
+=>
+    (build-wall 1 palisade-wall)
+)
+
+; Build gate at perimeter 1
+(defrule
+    (current-age >= feudal-age)
+    (can-build-gate 1)
+=>
+    (build-gate 1)
+)
+
+(defrule
+    (current-age >= castle-age)
+=>
+    (enable-wall-placement 2)
+    (set-strategic-number sn-gate-type-for-wall 1)
+    (chat-to-all "AL-AMIN2.0: Upgrading to stone walls...")
+    (disable-self)
+)
+
+; Build stone walls at perimeter 2 (outer)
+(defrule
+    (current-age >= castle-age)
+    (can-build-wall 2 stone-wall)
+=>
+    (build-wall 2 stone-wall)
+)
+
+; Build gate at perimeter 2
+(defrule
+    (current-age >= castle-age)
+    (can-build-gate 2)
+=>
+    (build-gate 2)
+)
+
+; --- Towers ---
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total watch-tower < 4)
+    (can-build watch-tower)
+=>
+    (build watch-tower)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total watch-tower < 8)
+    (can-build watch-tower)
+=>
+    (build watch-tower)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total watch-tower < 12)
+    (can-build watch-tower)
+=>
+    (build watch-tower)
+)
+
+; --- Castles ---
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle < 2)
+    (can-build castle)
+=>
+    (build castle)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total castle < 4)
+    (can-build castle)
+=>
+    (build castle)
+)
+
+; --- Additional Town Centers (boom economy) ---
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total town-center < 3)
+    (can-build town-center)
+=>
+    (build town-center)
+)
+
+; ============================================================
+; PHASE 10: ECONOMIC UPGRADES
+; ============================================================
+
+; --- Lumber ---
+(defrule
+    (can-research ri-double-bit-axe)
+=>
+    (research ri-double-bit-axe)
+)
+
+(defrule
+    (can-research ri-bow-saw)
+=>
+    (research ri-bow-saw)
+)
+
+(defrule
+    (can-research ri-two-man-saw)
+=>
+    (research ri-two-man-saw)
+)
+
+; --- Farming ---
+(defrule
+    (can-research ri-horse-collar)
+=>
+    (research ri-horse-collar)
+)
+
+(defrule
+    (can-research ri-heavy-plow)
+=>
+    (research ri-heavy-plow)
+)
+
+(defrule
+    (can-research ri-crop-rotation)
+=>
+    (research ri-crop-rotation)
+)
+
+; --- Gold Mining ---
+(defrule
+    (can-research ri-gold-mining)
+=>
+    (research ri-gold-mining)
+)
+
+(defrule
+    (can-research ri-gold-shaft-mining)
+=>
+    (research ri-gold-shaft-mining)
+)
+
+; --- Stone Mining ---
+(defrule
+    (can-research ri-stone-mining)
+=>
+    (research ri-stone-mining)
+)
+
+(defrule
+    (can-research ri-stone-shaft-mining)
+=>
+    (research ri-stone-shaft-mining)
+)
+
+; --- Town Center ---
+(defrule
+    (can-research ri-wheel-barrow)
+=>
+    (research ri-wheel-barrow)
+)
+
+(defrule
+    (can-research ri-hand-cart)
+=>
+    (research ri-hand-cart)
+)
+
+; --- Loom ---
+(defrule
+    (can-research ri-loom)
+=>
+    (research ri-loom)
+)
+
+; ============================================================
+; PHASE 11: MILITARY UPGRADES (Full Tech Tree)
+; ============================================================
+
+; --- Archery Range Unit Upgrades ---
+(defrule
+    (can-research ri-crossbow)
+=>
+    (research ri-crossbow)
+)
+
+(defrule
+    (can-research ri-elite-skirmisher)
+=>
+    (research ri-elite-skirmisher)
+)
+
+(defrule
+    (can-research ri-arbalest)
+=>
+    (research ri-arbalest)
+)
+
+(defrule
+    (can-research ri-thumb-ring)
+=>
+    (research ri-thumb-ring)
+)
+
+(defrule
+    (can-research ri-parthian-tactics)
+=>
+    (research ri-parthian-tactics)
+)
+
+; --- Barracks Unit Upgrades ---
+(defrule
+    (can-research ri-man-at-arms)
+=>
+    (research ri-man-at-arms)
+)
+
+(defrule
+    (can-research ri-long-swordsman)
+=>
+    (research ri-long-swordsman)
+)
+
+(defrule
+    (can-research ri-pikeman)
+=>
+    (research ri-pikeman)
+)
+
+(defrule
+    (can-research ri-two-handed-swordsman)
+=>
+    (research ri-two-handed-swordsman)
+)
+
+(defrule
+    (can-research ri-champion)
+=>
+    (research ri-champion)
+)
+
+(defrule
+    (can-research ri-halberdier)
+=>
+    (research ri-halberdier)
+)
+
+(defrule
+    (can-research ri-supplies)
+=>
+    (research ri-supplies)
+)
+
+(defrule
+    (can-research ri-gambesons)
+=>
+    (research ri-gambesons)
+)
+
+(defrule
+    (can-research ri-squires)
+=>
+    (research ri-squires)
+)
+
+(defrule
+    (can-research ri-arson)
+=>
+    (research ri-arson)
+)
+
+; --- Blacksmith (Archer Attack + Armor) ---
+(defrule
+    (can-research ri-fletching)
+=>
+    (research ri-fletching)
+)
+
+(defrule
+    (can-research ri-bodkin-arrow)
+=>
+    (research ri-bodkin-arrow)
+)
+
+(defrule
+    (can-research ri-bracer)
+=>
+    (research ri-bracer)
+)
+
+(defrule
+    (can-research ri-padded-archer-armor)
+=>
+    (research ri-padded-archer-armor)
+)
+
+(defrule
+    (can-research ri-leather-archer-armor)
+=>
+    (research ri-leather-archer-armor)
+)
+
+(defrule
+    (can-research ri-ring-archer-armor)
+=>
+    (research ri-ring-archer-armor)
+)
+
+; --- Blacksmith (Melee Attack + Infantry Armor) ---
+(defrule
+    (can-research ri-forging)
+=>
+    (research ri-forging)
+)
+
+(defrule
+    (can-research ri-iron-casting)
+=>
+    (research ri-iron-casting)
+)
+
+(defrule
+    (can-research ri-blast-furnace)
+=>
+    (research ri-blast-furnace)
+)
+
+(defrule
+    (can-research ri-scale-mail)
+=>
+    (research ri-scale-mail)
+)
+
+(defrule
+    (can-research ri-chain-mail)
+=>
+    (research ri-chain-mail)
+)
+
+(defrule
+    (can-research ri-plate-mail)
+=>
+    (research ri-plate-mail)
+)
+
+; --- Blacksmith (Cavalry Barding Armor) ---
+(defrule
+    (can-research ri-scale-barding)
+=>
+    (research ri-scale-barding)
+)
+
+(defrule
+    (can-research ri-chain-barding)
+=>
+    (research ri-chain-barding)
+)
+
+(defrule
+    (can-research ri-plate-barding)
+=>
+    (research ri-plate-barding)
+)
+
+; --- Stable Upgrades ---
+(defrule
+    (can-research ri-bloodlines)
+=>
+    (research ri-bloodlines)
+)
+
+(defrule
+    (can-research ri-husbandry)
+=>
+    (research ri-husbandry)
+)
+
+(defrule
+    (can-research ri-light-cavalry)
+=>
+    (research ri-light-cavalry)
+)
+
+(defrule
+    (can-research ri-cavalier)
+=>
+    (research ri-cavalier)
+)
+
+(defrule
+    (can-research ri-hussar)
+=>
+    (research ri-hussar)
+)
+
+(defrule
+    (can-research ri-paladin)
+=>
+    (research ri-paladin)
+)
+
+; --- University (Defensive & Utility) ---
+(defrule
+    (can-research ri-ballistics)
+=>
+    (research ri-ballistics)
+)
+
+(defrule
+    (can-research ri-guard-tower)
+=>
+    (research ri-guard-tower)
+)
+
+(defrule
+    (can-research ri-keep)
+=>
+    (research ri-keep)
+)
+
+(defrule
+    (can-research ri-bombard-tower)
+=>
+    (research ri-bombard-tower)
+)
+
+(defrule
+    (can-research ri-masonry)
+=>
+    (research ri-masonry)
+)
+
+(defrule
+    (can-research ri-architecture)
+=>
+    (research ri-architecture)
+)
+
+(defrule
+    (can-research ri-murder-holes)
+=>
+    (research ri-murder-holes)
+)
+
+(defrule
+    (can-research ri-heated-shot)
+=>
+    (research ri-heated-shot)
+)
+
+(defrule
+    (can-research ri-arrowslits)
+=>
+    (research ri-arrowslits)
+)
+
+(defrule
+    (can-research ri-fortified-wall)
+=>
+    (research ri-fortified-wall)
+)
+
+(defrule
+    (can-research ri-treadmill-crane)
+=>
+    (research ri-treadmill-crane)
+)
+
+(defrule
+    (can-research ri-chemistry)
+=>
+    (research ri-chemistry)
+)
+
+(defrule
+    (can-research ri-siege-engineers)
+=>
+    (research ri-siege-engineers)
+)
+
+; --- Monastery Upgrades ---
+(defrule
+    (can-research ri-sanctity)
+=>
+    (research ri-sanctity)
+)
+
+(defrule
+    (can-research ri-fervor)
+=>
+    (research ri-fervor)
+)
+
+(defrule
+    (can-research ri-redemption)
+=>
+    (research ri-redemption)
+)
+
+(defrule
+    (can-research ri-atonement)
+=>
+    (research ri-atonement)
+)
+
+(defrule
+    (can-research ri-devotion)
+=>
+    (research ri-devotion)
+)
+
+(defrule
+    (can-research ri-block-printing)
+=>
+    (research ri-block-printing)
+)
+
+(defrule
+    (can-research ri-faith)
+=>
+    (research ri-faith)
+)
+
+(defrule
+    (can-research ri-illumination)
+=>
+    (research ri-illumination)
+)
+
+(defrule
+    (can-research ri-theocracy)
+=>
+    (research ri-theocracy)
+)
+
+; --- Market Upgrades ---
+(defrule
+    (can-research ri-coinage)
+=>
+    (research ri-coinage)
+)
+
+(defrule
+    (can-research ri-caravan)
+=>
+    (research ri-caravan)
+)
+
+(defrule
+    (can-research ri-banking)
+=>
+    (research ri-banking)
+)
+
+(defrule
+    (can-research ri-guilds)
+=>
+    (research ri-guilds)
+)
+
+; --- Siege Workshop Upgrades ---
+(defrule
+    (can-research ri-capped-ram)
+=>
+    (research ri-capped-ram)
+)
+
+(defrule
+    (can-research ri-onager)
+=>
+    (research ri-onager)
+)
+
+(defrule
+    (can-research ri-heavy-scorpion)
+=>
+    (research ri-heavy-scorpion)
+)
+
+; --- Town Center (Visibility) ---
+(defrule
+    (can-research ri-town-watch)
+=>
+    (research ri-town-watch)
+)
+
+(defrule
+    (can-research ri-town-patrol)
+=>
+    (research ri-town-patrol)
+)
+
+; --- Castle Upgrades ---
+(defrule
+    (can-research ri-conscription)
+=>
+    (research ri-conscription)
+)
+
+(defrule
+    (can-research ri-hoardings)
+=>
+    (research ri-hoardings)
+)
+
+(defrule
+    (can-research ri-sappers)
+=>
+    (research ri-sappers)
+)
+
+; ============================================================
+; PHASE 12: MILITARY PRODUCTION (Standby Garrison Force)
+; ============================================================
+
+; --- Scout Cavalry: Dark Age scouting ---
+(defrule
+    (current-age == dark-age)
+    (unit-type-count-total scout-cavalry-line < 1)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
+
+; --- Archers: primary defensive garrison unit ---
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total archer-line < 10)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total archer-line < 25)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total archer-line < 40)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+; --- Skirmishers: counter enemy archers ---
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total skirmisher-line < 6)
+    (can-train skirmisher-line)
+=>
+    (train skirmisher-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total skirmisher-line < 12)
+    (can-train skirmisher-line)
+=>
+    (train skirmisher-line)
+)
+
+; --- Spearmen / Pikemen: anti-cavalry defense ---
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total spearman-line < 6)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total spearman-line < 15)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+; --- Cavalry Archers: mobile ranged DPS behind walls ---
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total cavalry-archer-line < 10)
+    (can-train cavalry-archer-line)
+=>
+    (train cavalry-archer-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total cavalry-archer-line < 20)
+    (can-train cavalry-archer-line)
+=>
+    (train cavalry-archer-line)
+)
+
+; --- Knights: mobile counter-attack force ---
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total knight-line < 10)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total knight-line < 20)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+; --- Mangonels / Onagers: area denial behind walls ---
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total mangonel-line < 3)
+    (can-train mangonel-line)
+=>
+    (train mangonel-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total mangonel-line < 6)
+    (can-train mangonel-line)
+=>
+    (train mangonel-line)
+)
+
+; --- Scorpions: massed anti-infantry behind walls ---
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total scorpion-line < 4)
+    (can-train scorpion-line)
+=>
+    (train scorpion-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total scorpion-line < 8)
+    (can-train scorpion-line)
+=>
+    (train scorpion-line)
+)
+
+; --- Battering Rams: siege for retaliatory strikes ---
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total battering-ram-line < 3)
+    (can-train battering-ram-line)
+=>
+    (train battering-ram-line)
+)
+
+; --- Trebuchets: smash attackers' siege and buildings ---
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total trebuchet < 5)
+    (can-train trebuchet)
+=>
+    (train trebuchet)
+)
+
+; --- Bombard Cannons: powerful ranged siege/defense ---
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total bombard-cannon < 4)
+    (can-train bombard-cannon)
+=>
+    (train bombard-cannon)
+)
+
+; --- Champion: beefy front-line defense ---
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total militiaman-line < 20)
+    (can-train militiaman-line)
+=>
+    (train militiaman-line)
+)
+
+; --- Hussars: rapid counter-raiding force ---
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total light-cavalry-line < 15)
+    (can-train light-cavalry-line)
+=>
+    (train light-cavalry-line)
+)
+
+; --- Hand Cannoneers: powerful ranged infantry ---
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total hand-cannoneer < 10)
+    (can-train hand-cannoneer)
+=>
+    (train hand-cannoneer)
+)
+
+; ============================================================
+; PHASE 13: MONKS & RELICS (Temple Artifacts)
+; ============================================================
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total monastery < 1)
+    (can-build monastery)
+=>
+    (build monastery)
+)
+
+; Second monastery in Imperial for faster monk production
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total monastery < 2)
+    (can-build monastery)
+=>
+    (build monastery)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total monk < 5)
+    (can-train monk)
+=>
+    (train monk)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total monk < 8)
+    (can-train monk)
+=>
+    (train monk)
+)
+
+; Monks seek relics across maximum distance
+(defrule
+    (current-age >= castle-age)
+=>
+    (set-strategic-number sn-relic-return-distance 200)
+    (set-strategic-number sn-minimum-number-monks 5)
+    (disable-self)
+)
+
+; ============================================================
+; PHASE 14: DEFENSIVE COMBAT LOGIC
+; ============================================================
+
+; --- Retaliation: small force counter when attacked ---
+(defrule
+    (town-under-attack)
+    (military-population >= 10)
+=>
+    (set-strategic-number sn-number-attack-groups 1)
+    (set-strategic-number sn-minimum-attack-group-size 8)
+    (set-strategic-number sn-maximum-attack-group-size 20)
+    (set-strategic-number sn-maximum-town-size 60)
+    (set-strategic-number sn-percent-attack-soldiers 50)
+    (chat-to-all "AL-AMIN2.0: Defending the homeland!")
+    (attack-now)
+)
+
+; --- Full retaliation: massive army unleashed ---
+(defrule
+    (town-under-attack)
+    (military-population >= 40)
+=>
+    (set-strategic-number sn-number-attack-groups 3)
+    (set-strategic-number sn-minimum-attack-group-size 12)
+    (set-strategic-number sn-maximum-attack-group-size 30)
+    (set-strategic-number sn-maximum-town-size 150)
+    (set-strategic-number sn-percent-attack-soldiers 65)
+    (chat-to-all "AL-AMIN2.0: Unleashing the full garrison!")
+    (attack-now)
+)
+
+; --- Overwhelming force: counter-offensive ---
+(defrule
+    (town-under-attack)
+    (military-population >= 80)
+=>
+    (set-strategic-number sn-number-attack-groups 5)
+    (set-strategic-number sn-minimum-attack-group-size 15)
+    (set-strategic-number sn-maximum-attack-group-size 40)
+    (set-strategic-number sn-maximum-town-size 255)
+    (set-strategic-number sn-percent-attack-soldiers 80)
+    (chat-to-all "AL-AMIN2.0: Total war. Annihilating threat.")
+    (attack-now)
+)
+
+; --- Reset to defensive posture when no longer attacked ---
+(defrule
+    (not (town-under-attack))
+    (strategic-number sn-number-attack-groups > 0)
+=>
+    (set-strategic-number sn-number-attack-groups 0)
+    (set-strategic-number sn-minimum-attack-group-size 20)
+    (set-strategic-number sn-maximum-attack-group-size 40)
+    (set-strategic-number sn-maximum-town-size 80)
+    (set-strategic-number sn-percent-attack-soldiers 0)
+    (up-reset-attack-now)
+)
+
+; ============================================================
+; PHASE 15: MARKET & TRADE (Continuous earning)
+; ============================================================
+
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total market < 1)
+    (can-build market)
+=>
+    (build market)
+)
+
+; --- Trade Carts: sustained gold income in late game ---
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total trade-cart < 5)
+    (can-train trade-cart)
+=>
+    (train trade-cart)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total trade-cart < 10)
+    (can-train trade-cart)
+=>
+    (train trade-cart)
+)
+
+; Sell excess resources
+(defrule
+    (wood-amount > 2500)
+    (can-sell-commodity wood)
+=>
+    (sell-commodity wood)
+)
+
+(defrule
+    (food-amount > 2500)
+    (can-sell-commodity food)
+=>
+    (sell-commodity food)
+)
+
+(defrule
+    (stone-amount > 1200)
+    (can-sell-commodity stone)
+=>
+    (sell-commodity stone)
+)
+
+; Emergency gold shortfall: sell wood/food
+(defrule
+    (gold-amount < 200)
+    (wood-amount > 800)
+    (can-sell-commodity wood)
+=>
+    (sell-commodity wood)
+)
+
+(defrule
+    (gold-amount < 200)
+    (food-amount > 800)
+    (can-sell-commodity food)
+=>
+    (sell-commodity food)
+)
+
+; Buy food if starving
+(defrule
+    (food-amount < 100)
+    (gold-amount > 500)
+    (can-buy-commodity food)
+=>
+    (buy-commodity food)
+)
+
+; Buy stone for castles/towers when running low
+(defrule
+    (stone-amount < 200)
+    (gold-amount > 600)
+    (can-buy-commodity stone)
+=>
+    (buy-commodity stone)
+)
+
+; Emergency wood buy if totally depleted
+(defrule
+    (wood-amount < 100)
+    (gold-amount > 500)
+    (can-buy-commodity wood)
+=>
+    (buy-commodity wood)
+)
+
+; ============================================================
+; PHASE 16: POPULATION & HOUSING SAFETY
+; ============================================================
+
+; Emergency housing: prevent getting population capped
+(defrule
+    (housing-headroom < 3)
+    (population-headroom > 0)
+    (can-build house)
+=>
+    (build house)
+)
+
+; ============================================================
+; PHASE 17: LATE GAME SCALING
+; ============================================================
+
+; Scale up defend groups in Imperial for stronger turtle
+(defrule
+    (current-age >= imperial-age)
+    (military-population >= 60)
+=>
+    (set-strategic-number sn-number-defend-groups 5)
+    (set-strategic-number sn-minimum-defend-group-size 8)
+    (set-strategic-number sn-maximum-defend-group-size 30)
+    (disable-self)
+)
+
+; Increase town size in late game for broader control
+(defrule
+    (current-age >= imperial-age)
+    (game-time > 2400)
+    (not (town-under-attack))
+=>
+    (set-strategic-number sn-maximum-town-size 100)
+    (set-strategic-number sn-safe-town-size 60)
+    (disable-self)
+)
+
+; ============================================================
+; END OF AL-AMIN2.0 AI SCRIPT
+; ============================================================
