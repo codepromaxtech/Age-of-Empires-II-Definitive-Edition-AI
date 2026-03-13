@@ -52,8 +52,8 @@
 =>
     ; --- Town Layout & Safe Zone (Structured Grid Building) ---
     (set-strategic-number sn-maximum-town-size 20)
-    (set-strategic-number sn-minimum-town-size 12)
-    (set-strategic-number sn-safe-town-size 30)
+    (set-strategic-number sn-minimum-town-size 14)
+    (set-strategic-number sn-safe-town-size 38)
     (set-strategic-number sn-placement-zone-size 7)
     (set-strategic-number sn-placement-fail-delta 2)
     (set-strategic-number sn-camp-max-distance 20)
@@ -460,48 +460,42 @@
 )
 
 ; ============================================================
-; PHASE 9: BEAUTIFUL FORTRESS - WALLS, TOWERS, CASTLES
+; PHASE 9: BEAUTIFUL FORTRESS - DOUBLE STONE WALLS
 ; ============================================================
 
-; --- Walls (enable palisade in Feudal, stone in Castle) ---
-(defrule
-    (current-age == feudal-age)
-=>
-    (enable-wall-placement 1)
-    (enable-wall-placement 2)
-    (chat-to-all "AL-AMIN2.0: Fortifying the perimeter with palisades...")
-    (disable-self)
-)
-
-; Build palisade walls at perimeter 1 (inner)
-(defrule
-    (current-age >= feudal-age)
-    (wood-amount > 150)
-    (can-build-wall 1 palisade-wall)
-=>
-    (set-strategic-number sn-gate-type-for-wall 0)
-    (build-wall 1 palisade-wall)
-)
-
-; Build gate at perimeter 1
-(defrule
-    (current-age >= feudal-age)
-    (wood-amount > 150)
-    (can-build-gate 1)
-=>
-    (set-strategic-number sn-gate-type-for-wall 0)
-    (build-gate 1)
-)
-
+; In Castle Age, we begin our massive stone fortification.
+; We use Perimeter 1 (Inner) and Perimeter 2 (Outer) to create a double stone wall with a gap.
+; If the map layout forces them together, the engine naturally merges them into a single double-thick wall.
 (defrule
     (current-age >= castle-age)
 =>
+    (enable-wall-placement 1)
     (enable-wall-placement 2)
-    (chat-to-all "AL-AMIN2.0: Upgrading to stone walls...")
+    (chat-to-all "AL-AMIN2.0: Commencing double stone wall fortifications...")
     (disable-self)
 )
 
-; Build stone walls at perimeter 2 (outer)
+; --- Perimeter 1 (Inner Stone Wall) ---
+(defrule
+    (current-age >= castle-age)
+    (stone-amount > 150)
+    (can-build-wall 1 stone-wall)
+=>
+    (set-strategic-number sn-gate-type-for-wall 1)
+    (build-wall 1 stone-wall)
+)
+
+; Build stone gate at inner perimeter
+(defrule
+    (current-age >= castle-age)
+    (stone-amount > 150)
+    (can-build-gate 1)
+=>
+    (set-strategic-number sn-gate-type-for-wall 1)
+    (build-gate 1)
+)
+
+; --- Perimeter 2 (Outer Stone Wall) ---
 (defrule
     (current-age >= castle-age)
     (stone-amount > 150)
@@ -511,7 +505,7 @@
     (build-wall 2 stone-wall)
 )
 
-; Build gate at perimeter 2
+; Build stone gate at outer perimeter
 (defrule
     (current-age >= castle-age)
     (stone-amount > 150)
