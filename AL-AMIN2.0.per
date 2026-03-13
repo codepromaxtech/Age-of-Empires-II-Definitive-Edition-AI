@@ -587,13 +587,41 @@
 ; In Castle Age, we begin our massive stone fortification.
 ; We use Perimeter 1 (Inner) and Perimeter 2 (Outer) to create a double stone wall with a gap.
 ; If the map layout forces them together, the engine naturally merges them into a single double-thick wall.
+
+; --- Island Map Detection & Coastal Wall Push ---
+; If on an island, temporarily expand town size to maximum (255) so the wall builder reaches the coastline
 (defrule
     (current-age >= castle-age)
+    (or (map-type islands) (map-type team-islands))
+=>
+    (set-strategic-number sn-maximum-town-size 255) ; Push walls to the sea
+    (enable-wall-placement 1)
+    (enable-wall-placement 2)
+    (chat-to-all "AL-AMIN2.0: Securing island coastline with double fortifications...")
+    (disable-self)
+)
+
+; --- Standard Land Map Wall Push ---
+(defrule
+    (current-age >= castle-age)
+    (not (map-type islands))
+    (not (map-type team-islands))
 =>
     (enable-wall-placement 1)
     (enable-wall-placement 2)
     (chat-to-all "AL-AMIN2.0: Commencing double stone wall fortifications...")
     (disable-self)
+)
+
+; --- Restore Economic Stability ---
+; After wall placement is locked in, drop the town size back down so villagers don't scatter
+(defrule
+    (current-age >= castle-age)
+    (or (map-type islands) (map-type team-islands))
+    (strategic-number sn-maximum-town-size == 255)
+=>
+    (set-strategic-number sn-maximum-town-size 45) ; Keep eco tight, walls stay on coast
+    (set-strategic-number sn-camp-max-distance 30)
 )
 
 ; --- Perimeter 1 (Inner Stone Wall) ---
