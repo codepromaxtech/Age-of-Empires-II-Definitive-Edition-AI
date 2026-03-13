@@ -486,10 +486,11 @@
     (build-wall 1 stone-wall)
 )
 
-; Build stone gate at inner perimeter
+; Build stone gate at inner perimeter (Max 3 gates)
 (defrule
     (current-age >= castle-age)
     (stone-amount > 150)
+    (building-type-count-total gate < 3)
     (can-build-gate 1)
 =>
     (set-strategic-number sn-gate-type-for-wall 1)
@@ -506,10 +507,11 @@
     (build-wall 2 stone-wall)
 )
 
-; Build stone gate at outer perimeter
+; Build stone gate at outer perimeter (Max 4 gates for outer ring)
 (defrule
     (current-age >= castle-age)
     (stone-amount > 150)
+    (building-type-count-total gate < 7)
     (can-build-gate 2)
 =>
     (set-strategic-number sn-gate-type-for-wall 1)
