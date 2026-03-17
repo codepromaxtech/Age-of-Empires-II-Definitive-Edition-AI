@@ -555,7 +555,49 @@
 )
 
 ; --- Under early attack: emergency military production ---
-; (Training handled by Phase 12 emergency rules)
+; CRITICAL: Train military IMMEDIATELY when attacked, regardless of resources
+(defrule
+    (town-under-attack)
+    (unit-type-count-total militiaman-line < 10)
+    (can-train militiaman-line)
+=>
+    (train militiaman-line)
+)
+
+(defrule
+    (town-under-attack)
+    (unit-type-count-total spearman-line < 8)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+(defrule
+    (town-under-attack)
+    (current-age >= feudal-age)
+    (unit-type-count-total archer-line < 10)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+; --- Emergency buildings when attacked ---
+(defrule
+    (town-under-attack)
+    (building-type-count-total barracks < 2)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (town-under-attack)
+    (current-age >= feudal-age)
+    (building-type-count-total archery-range < 1)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
 
 ; --- Emergency tower when under early attack ---
 (defrule
@@ -565,6 +607,37 @@
     (can-build watch-tower)
 =>
     (build watch-tower)
+)
+
+; --- HIGH RESOURCE + UNDER ATTACK = Full Emergency ---
+; When rich AND attacked, train everything at maximum speed
+(defrule
+    (town-under-attack)
+    (food-amount >= 300)
+    (gold-amount >= 200)
+    (unit-type-count-total knight-line < 15)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (town-under-attack)
+    (food-amount >= 200)
+    (unit-type-count-total spearman-line < 20)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+(defrule
+    (town-under-attack)
+    (food-amount >= 200)
+    (wood-amount >= 200)
+    (unit-type-count-total archer-line < 20)
+    (can-train archer-line)
+=>
+    (train archer-line)
 )
 
 (defrule
@@ -2163,45 +2236,55 @@
 ; PHASE 14: DEFENSIVE COMBAT LOGIC
 ; ============================================================
 
-; --- Retaliation: small force counter when attacked ---
+; --- IMMEDIATE: Respond with ANY available military (even 1 soldier) ---
 (defrule
     (town-under-attack)
-    (military-population >= 10)
+    (military-population >= 1)
 =>
     (set-strategic-number sn-number-attack-groups 1)
-    (set-strategic-number sn-minimum-attack-group-size 8)
+    (set-strategic-number sn-minimum-attack-group-size 1)
+    (set-strategic-number sn-maximum-attack-group-size 10)
+    (set-strategic-number sn-maximum-town-size 40)
+    (set-strategic-number sn-percent-attack-soldiers 100)
+    (attack-now)
+)
+
+; --- Small force: organized defense ---
+(defrule
+    (town-under-attack)
+    (military-population >= 8)
+=>
+    (set-strategic-number sn-number-attack-groups 2)
+    (set-strategic-number sn-minimum-attack-group-size 4)
     (set-strategic-number sn-maximum-attack-group-size 20)
-    (set-strategic-number sn-maximum-town-size 60)
-    (set-strategic-number sn-percent-attack-soldiers 50)
-    (chat-to-all "ZULFIKAR: Defending the homeland!")
+    (set-strategic-number sn-maximum-town-size 80)
+    (set-strategic-number sn-percent-attack-soldiers 80)
     (attack-now)
 )
 
 ; --- Full retaliation: massive army unleashed ---
 (defrule
     (town-under-attack)
-    (military-population >= 40)
+    (military-population >= 30)
 =>
     (set-strategic-number sn-number-attack-groups 3)
-    (set-strategic-number sn-minimum-attack-group-size 12)
+    (set-strategic-number sn-minimum-attack-group-size 10)
     (set-strategic-number sn-maximum-attack-group-size 30)
     (set-strategic-number sn-maximum-town-size 150)
-    (set-strategic-number sn-percent-attack-soldiers 65)
-    (chat-to-all "ZULFIKAR: Unleashing the full garrison!")
+    (set-strategic-number sn-percent-attack-soldiers 70)
     (attack-now)
 )
 
 ; --- Overwhelming force: counter-offensive ---
 (defrule
     (town-under-attack)
-    (military-population >= 80)
+    (military-population >= 60)
 =>
     (set-strategic-number sn-number-attack-groups 5)
-    (set-strategic-number sn-minimum-attack-group-size 15)
+    (set-strategic-number sn-minimum-attack-group-size 12)
     (set-strategic-number sn-maximum-attack-group-size 40)
     (set-strategic-number sn-maximum-town-size 255)
     (set-strategic-number sn-percent-attack-soldiers 80)
-    (chat-to-all "ZULFIKAR: Total war. Annihilating threat.")
     (attack-now)
 )
 
