@@ -361,6 +361,185 @@
 )
 
 ; ============================================================
+; PHASE 1.5: HIGH RESOURCE START DETECTION (Aggressive Opening)
+; When resources are abundant from the start, rush military + defenses simultaneously
+; ============================================================
+
+; --- Detect High Resource Start (e.g. High Resources game setting) ---
+; If we have 500+ food and 500+ wood in Dark Age, go all-in aggression
+(defrule
+    (current-age == dark-age)
+    (food-amount >= 500)
+    (wood-amount >= 500)
+    (building-type-count-total barracks < 2)
+    (can-build barracks)
+=>
+    (build barracks)
+    (chat-to-all "ZULFIKAR: High resources detected! Building war machine early!")
+)
+
+; --- Train militia immediately when resources are high ---
+(defrule
+    (current-age == dark-age)
+    (food-amount >= 400)
+    (gold-amount >= 100)
+    (unit-type-count-total militia < 6)
+    (can-train militia)
+=>
+    (train militia)
+)
+
+; --- Rush to Feudal with extra barracks when rich ---
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 400)
+    (wood-amount >= 400)
+    (building-type-count-total barracks < 3)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+; --- Immediately build archery ranges in Feudal if rich ---
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 300)
+    (wood-amount >= 300)
+    (building-type-count-total archery-range < 3)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+; --- Build stable immediately in Feudal if rich ---
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 300)
+    (wood-amount >= 200)
+    (gold-amount >= 200)
+    (building-type-count-total stable < 1)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+; --- Aggressive Feudal army when rich: archers + scouts ---
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 200)
+    (wood-amount >= 200)
+    (unit-type-count-total archer < 10)
+    (can-train archer)
+=>
+    (train archer)
+)
+
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 200)
+    (gold-amount >= 100)
+    (unit-type-count-total skirmisher < 8)
+    (can-train skirmisher)
+=>
+    (train skirmisher)
+)
+
+; --- When entering Castle Age with high resources, immediately rush castle ---
+(defrule
+    (current-age == castle-age)
+    (stone-amount >= 650)
+    (building-type-count-total castle < 1)
+    (can-build castle)
+=>
+    (build castle)
+    (chat-to-all "ZULFIKAR: Resources are abundant! Building a castle NOW!")
+)
+
+; --- If we have massive stone, build 2nd castle immediately ---
+(defrule
+    (current-age >= castle-age)
+    (stone-amount >= 700)
+    (building-type-count-total castle < 2)
+    (can-build castle)
+=>
+    (build castle)
+    (chat-to-all "ZULFIKAR: Fortress expanding! Second castle going up!")
+)
+
+; --- Under early attack: emergency military production ---
+(defrule
+    (town-under-attack)
+    (current-age <= feudal-age)
+    (unit-type-count-total militiaman-line < 8)
+    (can-train militiaman-line)
+=>
+    (train militiaman-line)
+)
+
+(defrule
+    (town-under-attack)
+    (current-age <= feudal-age)
+    (unit-type-count-total spearman-line < 6)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+; --- Emergency tower when under early attack ---
+(defrule
+    (town-under-attack)
+    (current-age >= feudal-age)
+    (building-type-count-total watch-tower < 3)
+    (can-build watch-tower)
+=>
+    (build watch-tower)
+)
+
+; --- Castle Age: mass produce army when rich ---
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 300)
+    (gold-amount >= 200)
+    (unit-type-count-total knight-line < 10)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 200)
+    (wood-amount >= 200)
+    (unit-type-count-total crossbow-line < 15)
+    (can-train crossbow-line)
+=>
+    (train crossbow-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 200)
+    (wood-amount >= 200)
+    (unit-type-count-total siege-workshop < 1)
+    (building-type-count-total siege-workshop < 1)
+    (can-build siege-workshop)
+=>
+    (build siege-workshop)
+)
+
+; --- Build multiple Town Centers FAST when rich (Castle Age boom) ---
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 400)
+    (wood-amount >= 400)
+    (stone-amount >= 200)
+    (building-type-count-total town-center < 3)
+    (can-build town-center)
+=>
+    (build town-center)
+)
+
+; ============================================================
 ; PHASE 2: VILLAGER PRODUCTION (Zero Idle Time)
 ; ============================================================
 
@@ -1027,30 +1206,41 @@
     (build bombard-tower)
 )
 
-; --- Castles (Massive stone investment) ---
+; --- Castles (PRIORITY: Build ASAP for defense and unique units) ---
 (defrule
     (current-age >= castle-age)
     (building-type-count-total castle < 1)
     (can-build castle)
 =>
     (build castle)
+    (chat-to-all "ZULFIKAR: First castle rising! The fortress stands!")
 )
 
+; 2nd castle with lower threshold (was 700, now 200)
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total castle < 3)
-    (stone-amount > 700)
-    (wood-amount > 300)
+    (building-type-count-total castle < 2)
+    (stone-amount > 200)
     (can-build castle)
 =>
     (build castle)
 )
 
+; 3rd castle
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle < 3)
+    (stone-amount > 350)
+    (can-build castle)
+=>
+    (build castle)
+)
+
+; 4th-6th castles in Imperial
 (defrule
     (current-age >= imperial-age)
     (building-type-count-total castle < 6)
-    (stone-amount > 800)
-    (wood-amount > 400)
+    (stone-amount > 400)
     (can-build castle)
 =>
     (build castle)
