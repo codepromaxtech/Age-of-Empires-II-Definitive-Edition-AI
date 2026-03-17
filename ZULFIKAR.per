@@ -640,7 +640,7 @@
 
 ; --- When entering Castle Age with high resources, immediately rush castle ---
 (defrule
-    (current-age == castle-age)
+    (current-age >= castle-age)
     (stone-amount >= 650)
     (building-type-count-total castle < 1)
     (can-build castle)
