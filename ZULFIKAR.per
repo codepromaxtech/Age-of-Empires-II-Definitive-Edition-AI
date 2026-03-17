@@ -384,7 +384,7 @@
 
 ; --- HIGH RESOURCE / EXTREME MODE: Extra buildings when rich ---
 (defrule
-    (current-age == feudal-age)
+    (current-age >= feudal-age)
     (food-amount >= 400)
     (wood-amount >= 400)
     (building-type-count-total barracks < 3)
@@ -394,7 +394,7 @@
 )
 
 (defrule
-    (current-age == feudal-age)
+    (current-age >= feudal-age)
     (food-amount >= 300)
     (wood-amount >= 300)
     (building-type-count-total archery-range < 3)
@@ -404,7 +404,7 @@
 )
 
 (defrule
-    (current-age == feudal-age)
+    (current-age >= feudal-age)
     (food-amount >= 300)
     (wood-amount >= 200)
     (building-type-count-total stable < 1)
@@ -419,7 +419,7 @@
 
 ; Dark Age: Extra militia when swimming in resources
 (defrule
-    (current-age == dark-age)
+    (current-age <= feudal-age)
     (food-amount >= 500)
     (gold-amount >= 200)
     (unit-type-count-total militiaman-line < 8)
@@ -2106,7 +2106,7 @@
 
 ; --- Dark Age: Build barracks ASAP and start training ---
 (defrule
-    (current-age == dark-age)
+    (current-age <= feudal-age)
     (building-type-count-total barracks < 1)
     (can-build barracks)
 =>
@@ -2114,7 +2114,7 @@
 )
 
 (defrule
-    (current-age == dark-age)
+    (current-age <= feudal-age)
     (unit-type-count-total militiaman-line < 3)
     (can-train militiaman-line)
 =>
@@ -2123,7 +2123,7 @@
 
 ; --- Scout Cavalry: Train scouts throughout early game ---
 (defrule
-    (current-age == dark-age)
+    (current-age <= feudal-age)
     (unit-type-count-total scout-cavalry-line < 1)
     (can-train scout-cavalry-line)
 =>
@@ -2132,7 +2132,7 @@
 
 ; --- Feudal: Train scouts aggressively ---
 (defrule
-    (current-age == feudal-age)
+    (current-age <= castle-age)
     (unit-type-count-total scout-cavalry-line < 5)
     (can-train scout-cavalry-line)
 =>
