@@ -1889,7 +1889,7 @@
 ; --- Castle Age: Scale up the core army fast ---
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total archer-line < 30)
+    (unit-type-count-total archer-line < 20)
     (can-train archer-line)
 =>
     (train archer-line)
@@ -1897,23 +1897,7 @@
 
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total spearman-line < 15)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total spearman-line < 25)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total spearman-line < 40)
+    (unit-type-count-total spearman-line < 12)
     (can-train spearman-line)
 =>
     (train spearman-line)
@@ -1922,7 +1906,7 @@
 ; --- Light Cavalry / Hussars: zero-gold raiding & meatshield ---
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total scout-cavalry-line < 10)
+    (unit-type-count-total scout-cavalry-line < 6)
     (can-train scout-cavalry-line)
 =>
     (train scout-cavalry-line)
@@ -1930,16 +1914,16 @@
 
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total scout-cavalry-line < 25)
+    (unit-type-count-total scout-cavalry-line < 15)
     (can-train scout-cavalry-line)
 =>
     (train scout-cavalry-line)
 )
 
-; --- Cavalry Archers: mobile ranged DPS behind walls ---
+; --- Cavalry Archers: mobile ranged DPS (small group only, focus on core army) ---
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total cavalry-archer-line < 10)
+    (unit-type-count-total cavalry-archer-line < 5)
     (can-train cavalry-archer-line)
 =>
     (train cavalry-archer-line)
@@ -1947,7 +1931,7 @@
 
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total cavalry-archer-line < 20)
+    (unit-type-count-total cavalry-archer-line < 10)
     (can-train cavalry-archer-line)
 =>
     (train cavalry-archer-line)
@@ -1970,10 +1954,10 @@
     (train knight-line)
 )
 
-; --- Mangonels / Onagers: area denial behind walls ---
+; --- Mangonels / Onagers: area denial (SMALL numbers, expensive) ---
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total mangonel-line < 3)
+    (unit-type-count-total mangonel-line < 2)
     (can-train mangonel-line)
 =>
     (train mangonel-line)
@@ -1981,51 +1965,43 @@
 
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total mangonel-line < 6)
+    (unit-type-count-total mangonel-line < 4)
     (can-train mangonel-line)
 =>
     (train mangonel-line)
 )
 
-; --- Scorpions: massed anti-infantry behind walls ---
+; --- Scorpions: only in Imperial, small support group ---
 (defrule
-    (current-age >= castle-age)
+    (current-age >= imperial-age)
     (unit-type-count-total scorpion-line < 4)
     (can-train scorpion-line)
 =>
     (train scorpion-line)
 )
 
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total scorpion-line < 8)
-    (can-train scorpion-line)
-=>
-    (train scorpion-line)
-)
-
-; --- Battering Rams: siege for retaliatory strikes ---
+; --- Battering Rams: siege for retaliatory strikes (max 2) ---
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total battering-ram-line < 3)
+    (unit-type-count-total battering-ram-line < 2)
     (can-train battering-ram-line)
 =>
     (train battering-ram-line)
 )
 
-; --- Trebuchets: smash attackers' siege and buildings ---
+; --- Trebuchets: essential push unit (max 3) ---
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total trebuchet < 5)
+    (unit-type-count-total trebuchet < 3)
     (can-train trebuchet)
 =>
     (train trebuchet)
 )
 
-; --- Bombard Cannons: powerful ranged siege/defense ---
+; --- Bombard Cannons: powerful but expensive (max 2) ---
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total bombard-cannon < 4)
+    (unit-type-count-total bombard-cannon < 2)
     (can-train bombard-cannon)
 =>
     (train bombard-cannon)
@@ -2279,7 +2255,7 @@
 (defrule
     (current-age >= castle-age)
     (players-unit-type-count target-player archer-line >= 10)
-    (unit-type-count-total mangonel-line < 5)
+    (unit-type-count-total mangonel-line < 3)
     (can-train mangonel-line)
 =>
     (train mangonel-line)
