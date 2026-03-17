@@ -305,8 +305,8 @@
     (set-strategic-number sn-stone-dropsite-distance 4)
     (set-strategic-number sn-dropsite-separation-distance 8)
 
-    ; --- Building Repair ---
-    (set-strategic-number sn-object-repair-level 1)
+    ; --- Building Repair (MAX: villagers auto-repair ALL damaged buildings) ---
+    (set-strategic-number sn-object-repair-level 32767)
 
     ; --- Defensive Posture (NO unprovoked attacks) ---
     (set-strategic-number sn-percent-enemy-sighted-response 100)
@@ -1136,11 +1136,11 @@
     (build-wall 1 stone-wall)
 )
 
-; Build stone gate at inner perimeter (Max 3 gates)
+; Build stone gate at inner perimeter (1 gate only for trade route)
 (defrule
     (current-age >= castle-age)
     (stone-amount > 150)
-    (building-type-count-total gate < 3)
+    (building-type-count-total gate < 1)
     (can-build-gate 1)
 =>
     (set-strategic-number sn-gate-type-for-wall 1)
@@ -1157,11 +1157,11 @@
     (build-wall 2 stone-wall)
 )
 
-; Build stone gate at outer perimeter (Max 4 gates for outer ring)
+; Build stone gate at outer perimeter (1 gate only)
 (defrule
     (current-age >= castle-age)
     (stone-amount > 150)
-    (building-type-count-total gate < 7)
+    (building-type-count-total gate < 2)
     (can-build-gate 2)
 =>
     (set-strategic-number sn-gate-type-for-wall 1)
@@ -2339,18 +2339,39 @@
 ; PHASE 18: MARKET & TRADE (Smart Commerce)
 ; ============================================================
 
+; --- Market: ALWAYS keep at least 1 (critical for trade income) ---
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total market < 1)
     (can-build market)
 =>
     (build market)
+    (chat-to-all "ZULFIKAR: Market is essential! Rebuilding immediately!")
 )
 
-; --- Trade Carts: only when ally market exists ---
+; --- Protect market: rebuild if destroyed in Castle+ ---
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total trade-cart < 8)
+    (building-type-count-total market < 1)
+    (can-build market)
+=>
+    (build market)
+)
+
+; --- Build 2nd market in Imperial for trade flexibility ---
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total market < 2)
+    (can-build market)
+=>
+    (build market)
+)
+
+; --- Trade Carts: generate gold through trade ---
+; In team games, trade with ally market
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total trade-cart < 10)
     (players-building-type-count any-ally market >= 1)
     (can-train trade-cart)
 =>
@@ -2359,11 +2380,30 @@
 
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total trade-cart < 20)
+    (unit-type-count-total trade-cart < 25)
     (players-building-type-count any-ally market >= 1)
     (can-train trade-cart)
 =>
     (train trade-cart)
+)
+
+; --- Solo games: buy/sell at market for gold when no allies ---
+(defrule
+    (current-age >= castle-age)
+    (gold-amount < 100)
+    (food-amount > 500)
+    (can-sell-commodity food)
+=>
+    (sell-commodity food)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (gold-amount < 100)
+    (wood-amount > 500)
+    (can-sell-commodity wood)
+=>
+    (sell-commodity wood)
 )
 
 ; --- Trade Cogs: when ally dock exists ---
