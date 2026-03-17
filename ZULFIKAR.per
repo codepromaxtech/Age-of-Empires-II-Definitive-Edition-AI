@@ -387,10 +387,10 @@
     (current-age == dark-age)
     (food-amount >= 400)
     (gold-amount >= 100)
-    (unit-type-count-total militia < 6)
-    (can-train militia)
+    (unit-type-count-total militiaman-line < 6)
+    (can-train militiaman-line)
 =>
-    (train militia)
+    (train militiaman-line)
 )
 
 ; --- Rush to Feudal with extra barracks when rich ---
@@ -427,25 +427,25 @@
     (build stable)
 )
 
-; --- Aggressive Feudal army when rich: archers + scouts ---
+; --- Aggressive Feudal army when rich: archers + skirmishers ---
 (defrule
     (current-age == feudal-age)
     (food-amount >= 200)
     (wood-amount >= 200)
-    (unit-type-count-total archer < 10)
-    (can-train archer)
+    (unit-type-count-total archer-line < 10)
+    (can-train archer-line)
 =>
-    (train archer)
+    (train archer-line)
 )
 
 (defrule
     (current-age == feudal-age)
     (food-amount >= 200)
     (gold-amount >= 100)
-    (unit-type-count-total skirmisher < 8)
-    (can-train skirmisher)
+    (unit-type-count-total skirmisher-line < 8)
+    (can-train skirmisher-line)
 =>
-    (train skirmisher)
+    (train skirmisher-line)
 )
 
 ; --- When entering Castle Age with high resources, immediately rush castle ---
@@ -1340,19 +1340,6 @@
     (research ri-stoneshaftmining)
 )
 
-; --- Town Center ---
-(defrule
-    (can-research ri-wheelbarrow)
-=>
-    (research ri-wheelbarrow)
-)
-
-(defrule
-    (can-research ri-hand-cart)
-=>
-    (research ri-hand-cart)
-)
-
 ; --- Loom (delayed until food is low or boar hunting) ---
 (defrule
     (can-research ri-loom)
@@ -2053,14 +2040,7 @@
     (train militiaman-line)
 )
 
-; --- Hussars: rapid counter-raiding force ---
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total scout-cavalry-line < 15)
-    (can-train scout-cavalry-line)
-=>
-    (train scout-cavalry-line)
-)
+; --- Hussars: rapid counter-raiding force (removed: redundant with line ~1946 cap of 25) ---
 
 ; --- Hand Cannoneers: powerful ranged infantry ---
 (defrule
@@ -2214,8 +2194,8 @@
     (set-strategic-number sn-minimum-attack-group-size 5)
     (set-strategic-number sn-maximum-attack-group-size 15)
     (set-strategic-number sn-percent-attack-soldiers 50)
-    (chat-to-all "ZULFIKAR: Feudal pressure incoming!")
     (attack-now)
+    (disable-self)
 )
 
 ; --- Castle Age: Periodic pressure every ~3 minutes ---
@@ -2229,8 +2209,8 @@
     (set-strategic-number sn-minimum-attack-group-size 10)
     (set-strategic-number sn-maximum-attack-group-size 25)
     (set-strategic-number sn-percent-attack-soldiers 50)
-    (chat-to-all "ZULFIKAR: Castle Age assault!")
     (attack-now)
+    (disable-self)
 )
 
 ; --- Imperial Age: Full offensive with overwhelming force ---
@@ -2244,8 +2224,8 @@
     (set-strategic-number sn-minimum-attack-group-size 12)
     (set-strategic-number sn-maximum-attack-group-size 35)
     (set-strategic-number sn-percent-attack-soldiers 60)
-    (chat-to-all "ZULFIKAR: Imperial offensive!")
     (attack-now)
+    (disable-self)
 )
 
 ; --- Late game: continuous pressure with massive army ---
