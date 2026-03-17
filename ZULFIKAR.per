@@ -382,7 +382,155 @@
     (chat-to-all "ZULFIKAR: High resources detected! Building war machine early!")
 )
 
-; (Unit training moved to Phase 12 — single source of truth for army composition)
+; --- HIGH RESOURCE / EXTREME MODE: Extra buildings when rich ---
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 400)
+    (wood-amount >= 400)
+    (building-type-count-total barracks < 3)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 300)
+    (wood-amount >= 300)
+    (building-type-count-total archery-range < 3)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 300)
+    (wood-amount >= 200)
+    (building-type-count-total stable < 1)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+; --- HIGH RESOURCE / EXTREME MODE: Scale army UP when resources overflow ---
+; These only fire when resources are very high (500+), adding on top of Phase 12 caps.
+; On normal games these rarely trigger. On High Resources/Ludikris they kick in hard.
+
+; Dark Age: Extra militia when swimming in resources
+(defrule
+    (current-age == dark-age)
+    (food-amount >= 500)
+    (gold-amount >= 200)
+    (unit-type-count-total militiaman-line < 8)
+    (can-train militiaman-line)
+=>
+    (train militiaman-line)
+)
+
+; Feudal: Mass archers when rich
+(defrule
+    (current-age >= feudal-age)
+    (food-amount >= 500)
+    (wood-amount >= 500)
+    (unit-type-count-total archer-line < 25)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+; Feudal: Extra skirmishers when rich
+(defrule
+    (current-age >= feudal-age)
+    (food-amount >= 400)
+    (gold-amount >= 200)
+    (unit-type-count-total skirmisher-line < 12)
+    (can-train skirmisher-line)
+=>
+    (train skirmisher-line)
+)
+
+; Castle: Mass knights when overflowing
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 500)
+    (gold-amount >= 500)
+    (unit-type-count-total knight-line < 25)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+; Castle: Extra spearmen when rich
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 500)
+    (unit-type-count-total spearman-line < 25)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+; Imperial: Massive army when resources overflowing
+(defrule
+    (current-age >= imperial-age)
+    (food-amount >= 500)
+    (gold-amount >= 500)
+    (unit-type-count-total knight-line < 40)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (food-amount >= 500)
+    (wood-amount >= 500)
+    (unit-type-count-total archer-line < 40)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (food-amount >= 500)
+    (unit-type-count-total militiaman-line < 40)
+    (can-train militiaman-line)
+=>
+    (train militiaman-line)
+)
+
+; Extra siege workshop + stable when swimming in resources
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 500)
+    (wood-amount >= 500)
+    (building-type-count-total siege-workshop < 2)
+    (can-build siege-workshop)
+=>
+    (build siege-workshop)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 500)
+    (gold-amount >= 500)
+    (building-type-count-total stable < 3)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+; Extra castles on extreme modes
+(defrule
+    (current-age >= castle-age)
+    (stone-amount >= 1000)
+    (building-type-count-total castle < 4)
+    (can-build castle)
+=>
+    (build castle)
+)
 
 ; --- When entering Castle Age with high resources, immediately rush castle ---
 (defrule
