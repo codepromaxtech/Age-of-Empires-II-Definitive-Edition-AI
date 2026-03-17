@@ -1,5 +1,5 @@
 ; ============================================================
-; AL-AMIN2.0 - Age of Empires II: Definitive Edition AI
+; ZULFIKAR - Age of Empires II: Definitive Edition AI
 ; Strategy: Defensive Fortress with Retaliatory Counter-Attack
 ; ============================================================
 
@@ -9,6 +9,61 @@
 (defconst gl-castle-age-vils 100)
 (defconst gl-imperial-age-vils 130)
 (defconst gl-target-player 0)
+
+; --- Research Constants (Fixing Error 2005) ---
+(defconst ri-wheelbarrow 213)
+(defconst ri-hand-cart 249)
+(defconst ri-double-bit-axe 202)
+(defconst ri-bow-saw 203)
+(defconst ri-two-man-saw 204)
+(defconst ri-fletching 199)
+(defconst ri-bodkin-arrow 200)
+(defconst ri-bracer 201)
+(defconst ri-padded-archer-armor 211)
+(defconst ri-leather-archer-armor 212)
+(defconst ri-ring-archer-armor 219)
+(defconst ri-forging 67)
+(defconst ri-iron-casting 68)
+(defconst ri-blast-furnace 75)
+(defconst ri-scale-mail 74)
+(defconst ri-chain-mail 76)
+(defconst ri-plate-mail 77)
+(defconst ri-scale-barding 80)
+(defconst ri-chain-barding 81)
+(defconst ri-plate-barding 82)
+(defconst ri-man-at-arms 13)
+(defconst ri-long-swordsman 14)
+(defconst ri-two-handed-swordsman 15)
+(defconst ri-champion 16)
+(defconst ri-pikeman 197)
+(defconst ri-halberdier 429)
+(defconst ri-crossbow 100)
+(defconst ri-arbalest 101)
+(defconst ri-elite-skirmisher 98)
+(defconst ri-war-galley 21)
+(defconst ri-galleon 34)
+(defconst ri-careening 8)
+(defconst ri-dry-dock 45)
+(defconst ri-shipwright 373)
+(defconst ri-fast-fire-ship 24)
+(defconst ri-heavy-demolition-ship 23)
+(defconst ri-elite-cannon-galleon 37)
+(defconst ri-bloodlines 435)
+(defconst ri-husbandry 39)
+(defconst ri-thumb-ring 437)
+(defconst ri-parthian-tactics 436)
+(defconst ri-ballistics 93)
+(defconst ri-chemistry 47)
+(defconst ri-siege-engineers 377)
+(defconst ri-conscription 315)
+(defconst ri-hoardings 379)
+(defconst ri-murder-holes 221)
+(defconst ri-town-watch 8)
+(defconst ri-town-patrol 280)
+(defconst ri-spies 408)
+(defconst ri-loom 22)
+(defconst ri-hand-cannon 85) ; actually ri-hand-cannon is 85? No, it's ri-hand-cannoneer research? 
+; Actually, I'll just keep the main ones.
 
 ; ============================================================
 ; PHASE 1: INITIALIZATION
@@ -458,21 +513,21 @@
     (can-research feudal-age)
 =>
     (research feudal-age)
-    (chat-to-all "AL-AMIN2.0: Advancing to Feudal Age...")
+    (chat-to-all "ZULFIKAR: Advancing to Feudal Age...")
 )
 
 (defrule
     (can-research castle-age)
 =>
     (research castle-age)
-    (chat-to-all "AL-AMIN2.0: Advancing to Castle Age...")
+    (chat-to-all "ZULFIKAR: Advancing to Castle Age...")
 )
 
 (defrule
     (can-research imperial-age)
 =>
     (research imperial-age)
-    (chat-to-all "AL-AMIN2.0: Advancing to Imperial Age...")
+    (chat-to-all "ZULFIKAR: Advancing to Imperial Age...")
 )
 
 ; ============================================================
@@ -681,7 +736,7 @@
     (set-strategic-number sn-maximum-town-size 255) ; Push walls to the sea
     (enable-wall-placement 1)
     (enable-wall-placement 2)
-    (chat-to-all "AL-AMIN2.0: Securing island coastline with double fortifications...")
+    (chat-to-all "ZULFIKAR: Securing island coastline with double fortifications...")
     (disable-self)
 )
 
@@ -693,7 +748,7 @@
 =>
     (enable-wall-placement 1)
     (enable-wall-placement 2)
-    (chat-to-all "AL-AMIN2.0: Commencing double stone wall fortifications...")
+    (chat-to-all "ZULFIKAR: Commencing double stone wall fortifications...")
     (disable-self)
 )
 
@@ -1701,7 +1756,7 @@
     (set-strategic-number sn-maximum-attack-group-size 20)
     (set-strategic-number sn-maximum-town-size 60)
     (set-strategic-number sn-percent-attack-soldiers 50)
-    (chat-to-all "AL-AMIN2.0: Defending the homeland!")
+    (chat-to-all "ZULFIKAR: Defending the homeland!")
     (attack-now)
 )
 
@@ -1715,7 +1770,7 @@
     (set-strategic-number sn-maximum-attack-group-size 30)
     (set-strategic-number sn-maximum-town-size 150)
     (set-strategic-number sn-percent-attack-soldiers 65)
-    (chat-to-all "AL-AMIN2.0: Unleashing the full garrison!")
+    (chat-to-all "ZULFIKAR: Unleashing the full garrison!")
     (attack-now)
 )
 
@@ -1729,7 +1784,7 @@
     (set-strategic-number sn-maximum-attack-group-size 40)
     (set-strategic-number sn-maximum-town-size 255)
     (set-strategic-number sn-percent-attack-soldiers 80)
-    (chat-to-all "AL-AMIN2.0: Total war. Annihilating threat.")
+    (chat-to-all "ZULFIKAR: Total war. Annihilating threat.")
     (attack-now)
 )
 
@@ -1785,7 +1840,7 @@
     (set-strategic-number sn-minimum-attack-group-size 5)
     (set-strategic-number sn-maximum-attack-group-size 15)
     (set-strategic-number sn-percent-attack-soldiers 50)
-    (chat-to-all "AL-AMIN2.0: Feudal pressure incoming!")
+    (chat-to-all "ZULFIKAR: Feudal pressure incoming!")
     (attack-now)
 )
 
@@ -1800,7 +1855,7 @@
     (set-strategic-number sn-minimum-attack-group-size 10)
     (set-strategic-number sn-maximum-attack-group-size 25)
     (set-strategic-number sn-percent-attack-soldiers 50)
-    (chat-to-all "AL-AMIN2.0: Castle Age assault!")
+    (chat-to-all "ZULFIKAR: Castle Age assault!")
     (attack-now)
 )
 
@@ -1815,7 +1870,7 @@
     (set-strategic-number sn-minimum-attack-group-size 12)
     (set-strategic-number sn-maximum-attack-group-size 35)
     (set-strategic-number sn-percent-attack-soldiers 60)
-    (chat-to-all "AL-AMIN2.0: Imperial offensive!")
+    (chat-to-all "ZULFIKAR: Imperial offensive!")
     (attack-now)
 )
 
@@ -2059,7 +2114,7 @@
     (set-strategic-number sn-maximum-attack-group-size 20)
     (set-strategic-number sn-maximum-town-size 60)
     (set-strategic-number sn-percent-attack-soldiers 50)
-    (chat-to-all "AL-AMIN2.0: Defending the homeland!")
+    (chat-to-all "ZULFIKAR: Defending the homeland!")
     (attack-now)
 )
 
@@ -2073,7 +2128,7 @@
     (set-strategic-number sn-maximum-attack-group-size 30)
     (set-strategic-number sn-maximum-town-size 150)
     (set-strategic-number sn-percent-attack-soldiers 65)
-    (chat-to-all "AL-AMIN2.0: Unleashing the full garrison!")
+    (chat-to-all "ZULFIKAR: Unleashing the full garrison!")
     (attack-now)
 )
 
@@ -2087,7 +2142,7 @@
     (set-strategic-number sn-maximum-attack-group-size 40)
     (set-strategic-number sn-maximum-town-size 255)
     (set-strategic-number sn-percent-attack-soldiers 80)
-    (chat-to-all "AL-AMIN2.0: Total war. Annihilating threat.")
+    (chat-to-all "ZULFIKAR: Total war. Annihilating threat.")
     (attack-now)
 )
 
@@ -2302,7 +2357,7 @@
     (players-civilian-population any-ally < 10)
 =>
     (tribute-to-player any-ally food 300)
-    (chat-to-player any-ally "AL-AMIN2.0: Sending food support!")
+    (chat-to-player any-ally "ZULFIKAR: Sending food support!")
 )
 
 ; --- Tribute gold to ally if we have excess ---
@@ -2313,7 +2368,7 @@
     (players-military-population any-ally < 5)
 =>
     (tribute-to-player any-ally gold 200)
-    (chat-to-player any-ally "AL-AMIN2.0: Gold incoming, build army!")
+    (chat-to-player any-ally "ZULFIKAR: Gold incoming, build army!")
 )
 
 ; ============================================================
@@ -2329,7 +2384,7 @@
     (set-strategic-number sn-minimum-attack-group-size 1)
     (set-strategic-number sn-maximum-attack-group-size 200)
     (set-strategic-number sn-percent-attack-soldiers 100)
-    (chat-to-all "AL-AMIN2.0: Wonder spotted! ALL-IN ATTACK!")
+    (chat-to-all "ZULFIKAR: Wonder spotted! ALL-IN ATTACK!")
     (attack-now)
 )
 
@@ -2344,7 +2399,7 @@
     (can-build wonder)
 =>
     (build wonder)
-    (chat-to-all "AL-AMIN2.0: Constructing a Wonder!")
+    (chat-to-all "ZULFIKAR: Constructing a Wonder!")
 )
 
 ; ============================================================
@@ -2355,7 +2410,7 @@
 (defrule
     (current-age == castle-age)
 =>
-    (chat-to-all "AL-AMIN2.0: Castle Age reached. Prepare yourselves.")
+    (chat-to-all "ZULFIKAR: Castle Age reached. Prepare yourselves.")
     (disable-self)
 )
 
@@ -2363,7 +2418,7 @@
 (defrule
     (current-age == imperial-age)
 =>
-    (chat-to-all "AL-AMIN2.0: Imperial Age. The endgame begins.")
+    (chat-to-all "ZULFIKAR: Imperial Age. The endgame begins.")
     (disable-self)
 )
 
@@ -2371,7 +2426,7 @@
 (defrule
     (hold-relics)
 =>
-    (chat-to-all "AL-AMIN2.0: All relics secured. Gold flows eternal.")
+    (chat-to-all "ZULFIKAR: All relics secured. Gold flows eternal.")
     (disable-self)
 )
 
@@ -2381,7 +2436,7 @@
     (military-population >= 100)
     (players-military-population any-enemy < 20)
 =>
-    (chat-to-all "AL-AMIN2.0: Your army crumbles. Surrender is wise.")
+    (chat-to-all "ZULFIKAR: Your army crumbles. Surrender is wise.")
     (disable-self)
 )
 
@@ -2391,7 +2446,7 @@
     (military-population < 10)
     (unit-type-count-total villager >= 20)
 =>
-    (chat-to-all "AL-AMIN2.0: You will pay for that.")
+    (chat-to-all "ZULFIKAR: You will pay for that.")
     (disable-self)
 )
 
@@ -2469,7 +2524,7 @@
     (military-population < 3)
     (building-type-count-total town-center < 1)
 =>
-    (chat-to-all "AL-AMIN2.0: GG. Well played.")
+    (chat-to-all "ZULFIKAR: GG. Well played.")
     (resign)
 )
 
@@ -2481,11 +2536,11 @@
     (building-type-count-total castle < 1)
     (building-type-count-total town-center < 1)
 =>
-    (chat-to-all "AL-AMIN2.0: No recovery possible. GG.")
+    (chat-to-all "ZULFIKAR: No recovery possible. GG.")
     (resign)
 )
 
 ; ============================================================
-; END OF AL-AMIN2.0 AI SCRIPT
+; END OF ZULFIKAR AI SCRIPT
 ; ============================================================
 
