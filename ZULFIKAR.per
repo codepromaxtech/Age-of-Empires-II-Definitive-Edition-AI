@@ -372,7 +372,7 @@
 ; --- Detect High Resource Start (e.g. High Resources game setting) ---
 ; If we have 500+ food and 500+ wood in Dark Age, go all-in aggression
 (defrule
-    (current-age == dark-age)
+    (current-age <= dark-age)
     (food-amount >= 500)
     (wood-amount >= 500)
     (building-type-count-total barracks < 2)
@@ -774,7 +774,7 @@
 ; ============================================================
 
 (defrule
-    (current-age == dark-age)
+    (current-age <= dark-age)
     (unit-type-count-total villager < gl-dark-age-vils)
     (can-train villager)
 =>
@@ -817,7 +817,8 @@
 )
 
 (defrule
-    (current-age == feudal-age)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
     (unit-type-count-total villager < gl-feudal-age-vils)
     (can-train villager)
 =>
@@ -825,7 +826,8 @@
 )
 
 (defrule
-    (current-age == castle-age)
+    (current-age >= castle-age)
+    (current-age < imperial-age)
     (unit-type-count-total villager < gl-castle-age-vils)
     (can-train villager)
 =>
@@ -874,7 +876,7 @@
 
 ; Barracks in Dark Age is REQUIRED as a prerequisite for Feudal Age
 (defrule
-    (current-age == dark-age)
+    (current-age <= dark-age)
     (building-type-count-total barracks < 1)
     (can-build barracks)
 =>
@@ -933,7 +935,7 @@
 ; ============================================================
 
 (defrule
-    (current-age == dark-age)
+    (current-age <= dark-age)
     (building-type-count-total mill > 0)
     (building-type-count-total farm < 6)
     (can-build farm)
@@ -942,7 +944,8 @@
 )
 
 (defrule
-    (current-age == feudal-age)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
     (building-type-count-total farm < 14)
     (can-build farm)
 =>
@@ -950,7 +953,8 @@
 )
 
 (defrule
-    (current-age == castle-age)
+    (current-age >= castle-age)
+    (current-age < imperial-age)
     (building-type-count-total farm < 28)
     (can-build farm)
 =>
@@ -970,7 +974,7 @@
 ; ============================================================
 
 (defrule
-    (current-age == dark-age)
+    (current-age <= dark-age)
     (building-type-count-total dock < 1)
     (can-build dock)
 =>
@@ -1002,7 +1006,7 @@
 )
 
 (defrule
-    (current-age == dark-age)
+    (current-age <= dark-age)
     (unit-type-count-total fishing-ship < 5)
     (can-train fishing-ship)
 =>
@@ -1137,7 +1141,8 @@
 
 ; --- Dynamic resource allocation (continuously adjusts, no disable-self) ---
 (defrule
-    (current-age == feudal-age)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
 =>
     (set-strategic-number sn-food-gatherer-percentage 40)
     (set-strategic-number sn-wood-gatherer-percentage 30)
@@ -1148,7 +1153,8 @@
 )
 
 (defrule
-    (current-age == castle-age)
+    (current-age >= castle-age)
+    (current-age < imperial-age)
 =>
     (set-strategic-number sn-food-gatherer-percentage 30)
     (set-strategic-number sn-wood-gatherer-percentage 20)
@@ -2506,7 +2512,8 @@
 
 ; --- Feudal Age: Early pressure with small army ---
 (defrule
-    (current-age == feudal-age)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
     (military-population >= 8)
     (game-time > 660)
     (not (town-under-attack))
@@ -2521,7 +2528,8 @@
 
 ; --- Castle Age: Periodic pressure every ~3 minutes ---
 (defrule
-    (current-age == castle-age)
+    (current-age >= castle-age)
+    (current-age < imperial-age)
     (military-population >= 20)
     (game-time > 1200)
     (not (town-under-attack))
@@ -3112,7 +3120,8 @@
 
 ; --- Chat on reaching Castle Age ---
 (defrule
-    (current-age == castle-age)
+    (current-age >= castle-age)
+    (current-age < imperial-age)
 =>
     (chat-to-all "ZULFIKAR: Castle Age reached. Prepare yourselves.")
     (disable-self)
@@ -3120,7 +3129,7 @@
 
 ; --- Chat on reaching Imperial ---
 (defrule
-    (current-age == imperial-age)
+    (current-age >= imperial-age)
 =>
     (chat-to-all "ZULFIKAR: Imperial Age. The endgame begins.")
     (disable-self)
