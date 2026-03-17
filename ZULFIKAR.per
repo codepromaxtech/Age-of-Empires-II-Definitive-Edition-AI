@@ -357,6 +357,10 @@
     (set-strategic-number sn-building-targeting-mode 1)
     (set-strategic-number sn-wall-targeting-mode 1)
 
+    ; --- Force Stone Gates (fixes wooden gate bug) ---
+    ; Value 0 = palisade gate (default), 1 = stone gate
+    (set-strategic-number sn-gate-type-for-wall 1)
+
     (disable-self)
 )
 
@@ -1128,7 +1132,7 @@
     (stone-amount > 150)
     (can-build-wall 1 stone-wall)
 =>
-    (set-strategic-number sn-gate-type-for-wall 661)
+    (set-strategic-number sn-gate-type-for-wall 1)
     (build-wall 1 stone-wall)
 )
 
@@ -1139,7 +1143,7 @@
     (building-type-count-total gate < 3)
     (can-build-gate 1)
 =>
-    (set-strategic-number sn-gate-type-for-wall 661)
+    (set-strategic-number sn-gate-type-for-wall 1)
     (build-gate 1)
 )
 
@@ -1149,7 +1153,7 @@
     (stone-amount > 150)
     (can-build-wall 2 stone-wall)
 =>
-    (set-strategic-number sn-gate-type-for-wall 661)
+    (set-strategic-number sn-gate-type-for-wall 1)
     (build-wall 2 stone-wall)
 )
 
@@ -1160,7 +1164,7 @@
     (building-type-count-total gate < 7)
     (can-build-gate 2)
 =>
-    (set-strategic-number sn-gate-type-for-wall 661)
+    (set-strategic-number sn-gate-type-for-wall 1)
     (build-gate 2)
 )
 
