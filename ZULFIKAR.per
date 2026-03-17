@@ -382,71 +382,7 @@
     (chat-to-all "ZULFIKAR: High resources detected! Building war machine early!")
 )
 
-; --- Train militia immediately when resources are high ---
-(defrule
-    (current-age == dark-age)
-    (food-amount >= 400)
-    (gold-amount >= 100)
-    (unit-type-count-total militiaman-line < 6)
-    (can-train militiaman-line)
-=>
-    (train militiaman-line)
-)
-
-; --- Rush to Feudal with extra barracks when rich ---
-(defrule
-    (current-age == feudal-age)
-    (food-amount >= 400)
-    (wood-amount >= 400)
-    (building-type-count-total barracks < 3)
-    (can-build barracks)
-=>
-    (build barracks)
-)
-
-; --- Immediately build archery ranges in Feudal if rich ---
-(defrule
-    (current-age == feudal-age)
-    (food-amount >= 300)
-    (wood-amount >= 300)
-    (building-type-count-total archery-range < 3)
-    (can-build archery-range)
-=>
-    (build archery-range)
-)
-
-; --- Build stable immediately in Feudal if rich ---
-(defrule
-    (current-age == feudal-age)
-    (food-amount >= 300)
-    (wood-amount >= 200)
-    (gold-amount >= 200)
-    (building-type-count-total stable < 1)
-    (can-build stable)
-=>
-    (build stable)
-)
-
-; --- Aggressive Feudal army when rich: archers + skirmishers ---
-(defrule
-    (current-age == feudal-age)
-    (food-amount >= 200)
-    (wood-amount >= 200)
-    (unit-type-count-total archer-line < 10)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-(defrule
-    (current-age == feudal-age)
-    (food-amount >= 200)
-    (gold-amount >= 100)
-    (unit-type-count-total skirmisher-line < 8)
-    (can-train skirmisher-line)
-=>
-    (train skirmisher-line)
-)
+; (Unit training moved to Phase 12 — single source of truth for army composition)
 
 ; --- When entering Castle Age with high resources, immediately rush castle ---
 (defrule
@@ -471,23 +407,7 @@
 )
 
 ; --- Under early attack: emergency military production ---
-(defrule
-    (town-under-attack)
-    (current-age <= feudal-age)
-    (unit-type-count-total militiaman-line < 8)
-    (can-train militiaman-line)
-=>
-    (train militiaman-line)
-)
-
-(defrule
-    (town-under-attack)
-    (current-age <= feudal-age)
-    (unit-type-count-total spearman-line < 6)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
+; (Training handled by Phase 12 emergency rules)
 
 ; --- Emergency tower when under early attack ---
 (defrule
@@ -497,27 +417,6 @@
     (can-build watch-tower)
 =>
     (build watch-tower)
-)
-
-; --- Castle Age: mass produce army when rich ---
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 300)
-    (gold-amount >= 200)
-    (unit-type-count-total knight-line < 10)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 200)
-    (wood-amount >= 200)
-    (unit-type-count-total archer-line < 15)
-    (can-train archer-line)
-=>
-    (train archer-line)
 )
 
 (defrule
@@ -1859,10 +1758,11 @@
     (train militiaman-line)
 )
 
-; --- Archers: PRIMARY unit, build these first and fast ---
+; --- Archers: PRIMARY unit (Feudal: 10, Castle: 20) ---
 (defrule
     (current-age >= feudal-age)
-    (unit-type-count-total archer-line < 15)
+    (current-age < castle-age)
+    (unit-type-count-total archer-line < 10)
     (can-train archer-line)
 =>
     (train archer-line)
@@ -1877,9 +1777,10 @@
     (train spearman-line)
 )
 
-; --- Skirmishers: supplemental ranged defense ---
+; --- Skirmishers: supplemental ranged defense (Feudal only, max 5) ---
 (defrule
     (current-age >= feudal-age)
+    (current-age < castle-age)
     (unit-type-count-total skirmisher-line < 5)
     (can-train skirmisher-line)
 =>
