@@ -532,6 +532,112 @@
     (build castle)
 )
 
+; ============================================================
+; PHASE 1.6: STANDBY ARMY (Maintain Ready Garrison When Affordable)
+; ============================================================
+; These rules keep a large standing army when resources are healthy (200-300).
+; They fill the gap between Phase 12 (small baseline) and extreme-mode (500+).
+; The AI won't sit on unspent resources — it builds soldiers proactively.
+
+; --- Feudal: Keep archers + spearmen ready ---
+(defrule
+    (current-age >= feudal-age)
+    (food-amount >= 200)
+    (wood-amount >= 200)
+    (unit-type-count-total archer-line < 15)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (food-amount >= 200)
+    (unit-type-count-total spearman-line < 10)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+; --- Castle: Maintain a strong mixed garrison ---
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 200)
+    (gold-amount >= 200)
+    (unit-type-count-total knight-line < 15)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 200)
+    (wood-amount >= 150)
+    (unit-type-count-total archer-line < 25)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 200)
+    (unit-type-count-total spearman-line < 18)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (food-amount >= 200)
+    (wood-amount >= 200)
+    (unit-type-count-total skirmisher-line < 10)
+    (can-train skirmisher-line)
+=>
+    (train skirmisher-line)
+)
+
+; --- Imperial: Keep a massive ready army ---
+(defrule
+    (current-age >= imperial-age)
+    (food-amount >= 200)
+    (gold-amount >= 200)
+    (unit-type-count-total knight-line < 25)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (food-amount >= 200)
+    (wood-amount >= 100)
+    (unit-type-count-total archer-line < 30)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (food-amount >= 200)
+    (unit-type-count-total militiaman-line < 25)
+    (can-train militiaman-line)
+=>
+    (train militiaman-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (food-amount >= 200)
+    (unit-type-count-total spearman-line < 25)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
 ; --- When entering Castle Age with high resources, immediately rush castle ---
 (defrule
     (current-age == castle-age)
