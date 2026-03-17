@@ -2121,10 +2121,19 @@
     (train militiaman-line)
 )
 
-; --- Scout Cavalry: Dark Age scouting ---
+; --- Scout Cavalry: Train scouts throughout early game ---
 (defrule
     (current-age == dark-age)
     (unit-type-count-total scout-cavalry-line < 1)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
+
+; --- Feudal: Train scouts aggressively ---
+(defrule
+    (current-age == feudal-age)
+    (unit-type-count-total scout-cavalry-line < 5)
     (can-train scout-cavalry-line)
 =>
     (train scout-cavalry-line)
@@ -2170,8 +2179,32 @@
 )
 
 ; --- GUARANTEED MINIMUM ARMY (no resource check — always maintain these) ---
-; These rules ensure the AI ALWAYS has at least a minimal fighting force.
-; Without resource conditions, they fire even when economy is tight.
+; CAVALRY FIRST: These rules fire with top priority to ensure mounted units.
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total scout-cavalry-line < 3)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total knight-line < 10)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total scout-cavalry-line < 8)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
+
+; Infantry & ranged minimum
 (defrule
     (current-age >= feudal-age)
     (unit-type-count-total archer-line < 5)
@@ -2186,14 +2219,6 @@
     (can-train spearman-line)
 =>
     (train spearman-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total knight-line < 5)
-    (can-train knight-line)
-=>
-    (train knight-line)
 )
 
 ; --- Castle Age: Scale up the core army fast ---
@@ -2216,7 +2241,7 @@
 ; --- Light Cavalry / Hussars: zero-gold raiding & meatshield ---
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total scout-cavalry-line < 6)
+    (unit-type-count-total scout-cavalry-line < 10)
     (can-train scout-cavalry-line)
 =>
     (train scout-cavalry-line)
@@ -2224,7 +2249,7 @@
 
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total scout-cavalry-line < 15)
+    (unit-type-count-total scout-cavalry-line < 20)
     (can-train scout-cavalry-line)
 =>
     (train scout-cavalry-line)
