@@ -2646,23 +2646,27 @@
 )
 
 ; ============================================================
-; PHASE 23: EARLY PALISADE WALLING (Quick Protection)
+; PHASE 23: EARLY WALLING (Stone Walls Only — No Wooden Gates)
 ; ============================================================
+; NOTE: Palisade walls create PALISADE GATES (wooden) which are weak.
+; This is hardcoded engine behavior that sn-gate-type-for-wall cannot override.
+; ZULFIKAR uses ONLY stone walls to ensure all gates are stone gates.
 
-; --- Feudal Age: Quick palisade walls before stone is available ---
+; --- Feudal Age: Stone wall perimeter 1 as soon as stone is available ---
 (defrule
-    (current-age == feudal-age)
-    (can-build-wall 1 palisade-wall)
+    (current-age >= feudal-age)
+    (stone-amount > 100)
+    (can-build-wall 1 stone-wall)
 =>
     (enable-wall-placement 1)
-    (build-wall 1 palisade-wall)
+    (build-wall 1 stone-wall)
 )
 
-; --- Dark Age: Palisade walls on open maps ---
+; --- Feudal Age: If no stone, use palisade but WITHOUT gates ---
+; (Palisade wall segments only — no build-gate call = no wooden gates)
 (defrule
-    (current-age == dark-age)
-    (game-time > 300)
-    (wood-amount > 150)
+    (current-age >= feudal-age)
+    (stone-amount < 100)
     (not (map-type arena))
     (not (map-type fortress))
     (not (map-type black-forest))
