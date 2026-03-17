@@ -1226,9 +1226,19 @@
     (build archery-range)
 )
 
+; --- Feudal Age: Build stable for scouts/knights ---
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total stable < 1)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+; --- Castle Age: 2nd stable for faster knight production ---
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total stable < 1)
+    (building-type-count-total stable < 2)
     (can-build stable)
 =>
     (build stable)
@@ -2094,11 +2104,18 @@
 ; PHASE 12: MILITARY PRODUCTION (Strong From the Start)
 ; ============================================================
 
-; --- Dark Age: Militia for early defense & Man-at-Arms rush ---
+; --- Dark Age: Build barracks ASAP and start training ---
+(defrule
+    (current-age == dark-age)
+    (building-type-count-total barracks < 1)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
 (defrule
     (current-age == dark-age)
     (unit-type-count-total militiaman-line < 3)
-    (unit-type-count-total villager >= 14)
     (can-train militiaman-line)
 =>
     (train militiaman-line)
@@ -2150,6 +2167,33 @@
     (can-train skirmisher-line)
 =>
     (train skirmisher-line)
+)
+
+; --- GUARANTEED MINIMUM ARMY (no resource check — always maintain these) ---
+; These rules ensure the AI ALWAYS has at least a minimal fighting force.
+; Without resource conditions, they fire even when economy is tight.
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total archer-line < 5)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total spearman-line < 5)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total knight-line < 5)
+    (can-train knight-line)
+=>
+    (train knight-line)
 )
 
 ; --- Castle Age: Scale up the core army fast ---
