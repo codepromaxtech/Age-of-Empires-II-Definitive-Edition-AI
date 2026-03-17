@@ -1841,36 +1841,74 @@
     (research ri-sappers)
 )
 
-; --- Dock (Naval Upgrades) ---
-; NOTE: Only using verified tech names. Line-based training handles upgrades automatically.
+; --- Dock (Naval Upgrades - ALL in one place) ---
+; Ship line upgrade chain: Galley -> War Galley -> Galleon
 (defrule
-    (can-research ri-careening)
-=>
-    (research ri-careening)
-)
-
-(defrule
-    (can-research ri-dry-dock)
-=>
-    (research ri-dry-dock)
-)
-
-(defrule
-    (can-research ri-shipwright)
-=>
-    (research ri-shipwright)
-)
-
-(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total dock >= 1)
     (can-research ri-war-galley)
 =>
     (research ri-war-galley)
 )
 
 (defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
     (can-research ri-galleon)
 =>
     (research ri-galleon)
+)
+
+; Fire Ship upgrade: Fire Ship -> Fast Fire Ship
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total dock >= 1)
+    (can-research ri-fast-fire-ship)
+=>
+    (research ri-fast-fire-ship)
+)
+
+; Demo Ship upgrade: Demolition Ship -> Heavy Demolition Ship
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
+    (can-research ri-heavy-demolition-ship)
+=>
+    (research ri-heavy-demolition-ship)
+)
+
+; Cannon Galleon upgrade
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
+    (can-research ri-elite-cannon-galleon)
+=>
+    (research ri-elite-cannon-galleon)
+)
+
+; Ship economy & speed upgrades
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total dock >= 1)
+    (can-research ri-careening)
+=>
+    (research ri-careening)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
+    (can-research ri-dry-dock)
+=>
+    (research ri-dry-dock)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
+    (can-research ri-shipwright)
+=>
+    (research ri-shipwright)
 )
 
 ; ============================================================
@@ -2616,24 +2654,8 @@
     (research ri-siege-onager)
 )
 
-; --- Naval Upgrades ---
-(defrule
-    (can-research ri-elite-cannon-galleon)
-=>
-    (research ri-elite-cannon-galleon)
-)
+; --- Naval Upgrades: moved to Dock section above ---
 
-(defrule
-    (can-research ri-heavy-demolition-ship)
-=>
-    (research ri-heavy-demolition-ship)
-)
-
-(defrule
-    (can-research ri-fast-fire-ship)
-=>
-    (research ri-fast-fire-ship)
-)
 
 ; --- Unique Unit Upgrade (civ-specific) ---
 (defrule
