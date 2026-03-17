@@ -1,0 +1,66 @@
+(defrule
+	(true)
+=>
+	(up-modify-sn sn-food-gatherer-percentage g:= desired-food-gatherers)
+	(up-modify-sn sn-wood-gatherer-percentage g:= desired-wood-gatherers)
+	(up-modify-sn sn-gold-gatherer-percentage g:= desired-gold-gatherers)
+	(up-modify-sn sn-stone-gatherer-percentage g:= desired-stone-gatherers))
+(defrule
+(or	(strategic-number sn-food-gatherer-percentage >= 1)
+(or	(strategic-number sn-wood-gatherer-percentage >= 1)
+(or	(strategic-number sn-gold-gatherer-percentage >= 1)
+	(strategic-number sn-stone-gatherer-percentage >= 1))))
+=>
+	(set-strategic-number sn-maximum-hunt-drop-distance 30)
+	(set-strategic-number sn-mill-max-distance 30)
+	(set-strategic-number sn-maximum-food-drop-distance 12) 
+	(set-strategic-number sn-maximum-wood-drop-distance 20)
+	(set-strategic-number sn-maximum-gold-drop-distance 20)
+	(set-strategic-number sn-maximum-stone-drop-distance 20))
+(defrule
+	(up-compare-goal mill-max-distance != 0)
+=>
+	(up-modify-sn sn-mill-max-distance g:= mill-max-distance))
+(defrule
+	(up-compare-goal lumbercamp-max-distance != 0)
+=>
+	(up-modify-sn sn-lumber-camp-max-distance g:= lumbercamp-max-distance))
+(defrule
+	(up-compare-goal miningcamp-max-distance != 0)
+=>
+	(up-modify-sn sn-mining-camp-max-distance g:= miningcamp-max-distance))
+(defrule
+	(unit-type-count-total villager g:< desired-number-villagers)
+	(can-train villager)
+=>
+	(train villager))
+(defrule
+	(unit-type-count-total fishing-ship g:< desired-number-fishing)
+	(can-train fishing-ship)
+=>
+	(train fishing-ship))
+(defrule
+	(unit-type-count-total trade-cart g:< desired-number-carts)
+(or	(players-building-type-count any-ally market >= 1)
+	(players-building-type-count any-neutral market >= 1))
+	(can-train trade-cart)
+=>
+	(train trade-cart))
+(defrule
+	(unit-type-count-total trade-cog g:< desired-number-cogs)
+(or	(players-building-type-count any-ally dock >= 1)
+	(players-building-type-count any-neutral dock >= 1))
+	(can-train trade-cog)
+=>
+	(train trade-cog))
+
+(defrule
+	(goal allow-cheating 1)
+	(up-compare-goal gl-game-time g:>= cheat-delay)
+	(up-timer-status cheat-timer != timer-running)
+=>
+	(up-cc-add-resource c: wood g: cheat-amount-wood)
+	(up-cc-add-resource c: food g: cheat-amount-food)
+	(up-cc-add-resource c: gold g: cheat-amount-gold)
+	(up-cc-add-resource c: stone g: cheat-amount-stone)
+	(up-set-timer c: cheat-timer g: cheat-interval))

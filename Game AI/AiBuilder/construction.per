@@ -1,0 +1,399 @@
+(defrule
+	(building-type-count-total town-center g:< desired-number-towncenters)
+	(can-build town-center)
+=>
+	(build town-center))
+(defrule
+	(goal allow-houses 1)
+	(up-pending-objects c: house <= 0)
+	(population-headroom > 0)
+	(housing-headroom < 5)
+	(can-build house)
+=>
+	(build house))
+
+(defrule
+	(up-timer-status town-size-timer != timer-running)
+(or	(up-pending-placement c: town-center)
+(or	(up-pending-placement c: farm)
+(or	(up-pending-placement c: house)
+(or	(up-pending-placement c: barracks)
+(or	(up-pending-placement c: archery-range)
+(or	(up-pending-placement c: stable)
+(or	(up-pending-placement c: siege-workshop)
+(or	(up-pending-placement c: blacksmith)
+(or	(up-pending-placement c: market)
+(or	(up-pending-placement c: dock)
+(or	(up-pending-placement c: university)
+	(up-pending-placement c: monastery))))))))))))
+=>
+	(up-modify-sn sn-maximum-town-size c:+ 1)
+	(up-modify-sn sn-maximum-town-size c:max 8)
+	(up-modify-sn sn-maximum-town-size c:min 30)
+	(enable-timer town-size-timer 6)
+	(up-jump-rule 1))
+(defrule
+	(up-timer-status town-size-timer != timer-running)
+(or	(up-pending-placement c: castle)
+(or	(up-pending-placement c: feitoria)
+(or	(up-pending-placement c: krepost)
+(or	(up-pending-placement c: bombard-tower)
+(or	(up-pending-placement c: watch-tower)
+	(up-pending-placement c: outpost))))))
+=>
+	(up-modify-sn sn-maximum-town-size c:+ 1)
+	(up-modify-sn sn-maximum-town-size c:max 8)
+	(up-modify-sn sn-maximum-town-size c:min 30)
+	(enable-timer town-size-timer 6))
+(defrule
+	(strategic-number sn-maximum-town-size s:> sn-camp-max-distance)
+=>
+	(up-modify-sn sn-camp-max-distance s:max sn-maximum-town-size))
+
+(defrule
+(or	(and	(up-pending-objects c: lumber-camp <= 0)
+		(up-pending-objects c: mining-camp <= 0))
+	(strategic-number sn-camp-max-distance g:>= map-size))
+=>
+	(up-jump-rule 4))
+(defrule
+	(resource-found wood)
+	(up-pending-objects c: lumber-camp >= 1)
+=>
+	(up-full-reset-search)
+	(up-filter-status c: status-pending c: list-active)
+	(up-find-status-local c: lumber-camp c: 1)
+	(up-set-target-object search-local c: 0)
+	(up-get-point position-object 509)
+	(up-set-target-point 509)
+	(up-reset-filters)
+	(up-filter-distance c: -1 c: 4)
+	(up-find-resource c: wood c: 3)
+	(up-get-search-state local-total))
+(defrule
+	(resource-found wood)
+	(up-pending-objects c: lumber-camp >= 1)
+	(up-compare-goal local-total >= 1)
+	(up-compare-goal remote-total <= 2)
+	(up-object-data object-data-hitpoints <= 1)
+=>
+	(up-target-point 0 action-delete -1 -1)
+	(up-reset-placement c: lumber-camp)
+	(set-strategic-number sn-allow-adjacent-dropsites 1)
+	(up-modify-sn sn-camp-max-distance c:+ 1))
+(defrule
+(or	(resource-found gold)
+	(resource-found stone))
+	(up-pending-objects c: mining-camp >= 1)
+=>
+	(up-full-reset-search)
+	(up-filter-status c: status-pending c: list-active)
+	(up-find-status-local c: mining-camp c: 1)
+	(up-set-target-object search-local c: 0)
+	(up-get-point position-object 509)
+	(up-set-target-point 509)
+	(up-reset-filters)
+	(up-filter-distance c: -1 c: 4)
+	(up-modify-goal 508 s:= sn-focus-player-number)
+	(set-strategic-number sn-focus-player-number 0)
+	(up-find-remote c: 66 c: 1)
+	(up-find-remote c: 102 c: 1)
+	(up-modify-sn sn-focus-player-number g:= 508)
+	(up-get-search-state local-total))
+(defrule
+(or	(resource-found gold)
+	(resource-found stone))
+	(up-pending-objects c: mining-camp >= 1) 
+	(up-compare-goal local-total >= 1)
+	(up-compare-goal remote-total <= 0)
+	(up-object-data object-data-hitpoints <= 1)
+=>
+	(up-target-point 0 action-delete -1 -1)
+	(up-reset-placement c: mining-camp)
+	(set-strategic-number sn-allow-adjacent-dropsites 1)
+	(up-modify-sn sn-camp-max-distance c:+ 1))
+
+(defrule
+	(building-type-count-total lumber-camp g:< desired-number-lumbercamps)
+	(up-pending-objects c: lumber-camp <= 0)
+	(strategic-number sn-wood-gatherer-percentage >= 1)
+	(resource-found wood)
+(or	(dropsite-min-distance wood > 4)
+	(building-type-count-total lumber-camp < 1))
+	(dropsite-min-distance wood g:< map-size)
+	(can-build lumber-camp)
+=>
+	(build lumber-camp))
+
+(defrule
+(or	(resource-found food)
+	(and	(building-type-count-total farm g:< desired-number-farms)
+		(building-type-count-total mill < 1)))
+		(up-pending-objects c: mill <= 0)
+	(strategic-number sn-food-gatherer-percentage >= 1)
+	(building-type-count-total mill g:< desired-number-mills)
+	(can-build mill)
+=>
+	(build mill))
+
+(defrule
+	(goal dependent-farms 1)
+=>
+	(up-modify-goal desired-number-farms g:= villager-count)
+	(up-modify-goal desired-number-farms s:%* sn-food-gatherer-percentage)
+	(up-modify-goal 510 g:= desired-number-farms)
+	(up-get-fact unit-type-count villager-food 509)
+	(up-modify-goal desired-number-farms g:- 509)
+	(up-get-fact unit-type-count villager-farmer 509)
+	(up-modify-goal desired-number-farms g:+ 509)
+	(up-modify-goal desired-number-farms c:max 0)
+	(up-modify-goal 510 c:+ 2);
+	(up-modify-goal desired-number-farms g:min 510))
+(defrule
+	(wood-amount < 160)
+	(dropsite-min-distance wood >= 5)
+	(building-type-count-total lumber-camp g:< desired-number-lumbercamps)
+	(strategic-number sn-wood-gatherer-percentage >= 1)
+=>
+	(up-jump-rule 18))
+(defrule
+(or	(up-compare-goal desired-number-farms <= 0)
+(or	(building-type-count-total farm g:>= desired-number-farms)
+(or	(up-pending-placement c: farm)
+	(not (up-can-build 0 c: farm)))))
+=>
+	(up-jump-rule 17))
+(defrule
+	(true)
+=>
+	(set-goal temporary-goal town-center)
+	(set-goal temporary-goal4 0)
+	(set-goal temporary-goal5 40)
+	(up-modify-goal temporary-goal5 s:min sn-maximum-town-size)
+	(set-goal temporary-goal8 0)
+	(up-modify-goal temporary-goal9 g:= map-size)
+	(set-goal temporary-goal10 0))
+(defrule
+	(true)
+=>
+	(set-goal point3-x -1)
+	(up-set-target-point position-self-x)
+	(up-full-reset-search)
+	(up-find-local g: temporary-goal c: 12)
+	(up-remove-objects search-local object-data-distance g:> temporary-goal5)
+	(up-clean-search search-local object-data-distance search-order-asc))
+(defrule; end neg jump
+(not	(up-set-target-object search-local g: temporary-goal4))
+=>
+	(up-jump-rule 12))
+(defrule
+	(up-set-target-object search-local g: temporary-goal4)
+	(up-object-data object-data-type == town-center)
+=>
+	(set-goal temporary-goal2 2)
+	(set-goal temporary-goal3 3)
+	(set-goal temporary-goal6 4)
+	(set-goal temporary-goal7 1))
+(defrule
+	(up-set-target-object search-local g: temporary-goal4)
+	(up-object-data object-data-type == mill)
+=>
+	(set-goal temporary-goal2 1)
+	(set-goal temporary-goal3 2)
+	(set-goal temporary-goal6 4)
+	(set-goal temporary-goal7 1))
+(defrule
+	(goal temporary-goal10 1)
+	(goal point3-x -1)
+=>
+	(up-modify-goal temporary-goal2 c:+ 1)
+	(up-modify-goal temporary-goal3 c:+ 1)
+	(up-modify-goal temporary-goal6 c:+ 1))
+(defrule
+	(up-set-target-object search-local g: temporary-goal4)
+=>
+	(up-get-point position-object point-x)
+	(up-copy-point point2-x point-x)
+	(up-modify-goal point2-x c:+ 40)
+	(up-modify-goal point2-y c:+ 40)
+	(up-modify-goal point-x g:+ temporary-goal2)
+	(up-modify-goal point-y g:+ temporary-goal3))
+(defrule
+	(up-compare-goal point-x >= 0)
+	(up-can-build-line 0 point-x c: farm)
+	(up-point-distance point2-x point-x g:< temporary-goal9)
+=>
+	(up-get-point-distance point2-x point-x temporary-goal9)
+	(up-copy-point point3-x point-x))
+(defrule
+	(up-compare-goal temporary-goal6 >= 2)
+=>
+	(up-modify-goal point-x g:- temporary-goal7)
+	(up-modify-goal temporary-goal6 c:- 1)
+	(up-jump-rule -2))
+(defrule
+	(up-compare-goal temporary-goal6 == 1)
+	(up-set-target-object search-local g: temporary-goal4)
+=>
+	(up-get-point position-object point-x)
+	(up-modify-goal point-x g:+ temporary-goal3)
+	(up-modify-goal point-y g:+ temporary-goal3)
+	(set-goal temporary-goal6 -7))
+(defrule
+	(up-compare-goal temporary-goal6 <= -2)
+=>
+	(up-modify-goal point-y g:- temporary-goal7)
+	(up-modify-goal temporary-goal6 c:+ 1)
+	(up-jump-rule -4))
+(defrule
+	(goal temporary-goal8 0)
+=>
+	(set-goal temporary-goal6 4)
+	(up-modify-goal temporary-goal2 c:+ 1)
+	(up-modify-goal temporary-goal3 c:+ 1)
+	(up-modify-goal temporary-goal2 c:* -1)
+	(up-modify-goal temporary-goal3 c:* -1)
+	(up-modify-goal temporary-goal7 c:* -1)
+	(set-goal temporary-goal8 1)
+	(up-jump-rule -6))
+(defrule
+	(goal temporary-goal10 0)
+	(goal point3-x -1)
+=>
+	(set-goal temporary-goal8 0)
+	(set-goal temporary-goal10 1)
+	(up-jump-rule -10))
+(defrule
+	(up-compare-goal point3-x >= 0)
+	(up-can-build-line 0 point3-x c: farm)
+	(can-build farm);
+	(up-can-build 0 c: farm)
+=>
+;	(chat-to-player my-player-number "Manual farm.")
+	(up-build-line point3-x point3-x c: farm)
+	(up-jump-rule 3))
+(defrule
+	(up-set-target-object search-local g: temporary-goal4)
+=>
+	(up-modify-goal temporary-goal4 c:+ 1)
+	(set-goal temporary-goal8 0)
+	(set-goal temporary-goal10 0)
+	(up-jump-rule -13)); end jump
+(defrule
+(not	(up-set-target-object search-local g: temporary-goal4))
+	(goal temporary-goal town-center)
+	(building-type-count mill >= 1)
+=>
+	(set-goal temporary-goal mill)
+	(up-full-reset-search)
+	(up-find-local g: temporary-goal c: 20)
+	(set-goal temporary-goal4 0)
+	(set-goal temporary-goal8 0)
+	(set-goal temporary-goal10 0)
+	(up-jump-rule -14))
+(defrule
+	(can-build farm);
+	(up-can-build 0 c: farm)
+=>
+;	(chat-to-player my-player-number "Normal farm.")
+	(build farm)); end jump
+
+(defrule
+	(building-type-count-total mining-camp g:< desired-number-miningcamps)
+	(up-pending-objects c: mining-camp <= 0)
+	(strategic-number sn-gold-gatherer-percentage >= 1)
+	(resource-found gold)
+	(dropsite-min-distance gold > 5)
+	(dropsite-min-distance gold g:< map-size)
+	(can-build mining-camp)
+=>
+	(build mining-camp))
+
+(defrule
+	(building-type-count-total mining-camp g:< desired-number-miningcamps)
+	(up-pending-objects c: mining-camp <= 0)
+	(strategic-number sn-stone-gatherer-percentage >= 1)
+	(resource-found stone)
+	(dropsite-min-distance stone > 5)
+	(dropsite-min-distance stone g:< map-size)
+	(can-build mining-camp)
+=>
+	(build mining-camp))
+
+(defrule
+	(building-type-count-total barracks g:< desired-number-barracks)
+	(can-build barracks)
+=>
+	(build barracks))
+
+(defrule
+	(building-type-count-total archery-range g:< desired-number-ranges)
+	(can-build archery-range)
+=>
+	(build archery-range))
+
+(defrule
+	(building-type-count-total stable g:< desired-number-stables)
+	(can-build stable)
+=>
+	(build stable))
+
+(defrule
+	(building-type-count-total siege-workshop g:< desired-number-workshops)
+	(can-build siege-workshop)
+=>
+	(build siege-workshop))
+
+(defrule
+	(building-type-count-total blacksmith g:< desired-number-blacksmiths)
+	(can-build blacksmith)
+=>
+	(build blacksmith))
+
+(defrule
+	(building-type-count-total market g:< desired-number-markets)
+	(can-build market)
+=>
+	(build market))
+
+(defrule
+	(building-type-count-total dock g:< desired-number-docks)
+	(can-build dock)
+=>
+	(build dock))
+
+(defrule
+	(building-type-count-total university g:< desired-number-universities)
+	(can-build university)
+=>
+	(build university))
+
+(defrule
+	(building-type-count-total monastery g:< desired-number-monasteries)
+	(can-build monastery)
+=>
+	(build monastery))
+
+(defrule
+	(building-type-count-total castle g:< desired-number-castles)
+	(can-build castle)
+=>
+	(build castle))
+
+(defrule
+	(building-type-count-total outpost g:< desired-number-outposts)
+	(can-build outpost)
+=>
+	(build outpost))
+
+(defrule
+	(building-type-count-total watch-tower g:< desired-number-watchtowers)
+	(can-build watch-tower)
+=>
+	(build watch-tower))
+
+(defrule
+	(building-type-count-total bombard-tower g:< desired-number-bombardtowers)
+	(can-build bombard-tower)
+=>
+	(build bombard-tower))

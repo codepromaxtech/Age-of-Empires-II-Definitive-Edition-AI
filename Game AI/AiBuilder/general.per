@@ -1,0 +1,73 @@
+(defrule
+	(true)
+=>
+	(up-modify-sn sn-number-explore-groups g:= desired-military-explorers)
+	(up-modify-sn sn-cap-civilian-explorers g:= desired-civilian-explorers)
+	(up-modify-sn sn-minimum-civilian-explorers g:= desired-civilian-explorers)
+	(up-modify-sn sn-number-boat-explore-groups g:= desired-naval-explorers)
+	(up-modify-sn sn-total-number-explorers g:= desired-military-explorers)
+	(up-modify-sn sn-total-number-explorers g:+ desired-civilian-explorers))
+
+(defrule
+	(up-compare-goal villager-count <= 0)
+=>
+	(up-jump-rule 5))
+(defrule
+	(true)
+=>
+	(set-goal temporary-goal 0)
+	(up-full-reset-search)
+	(up-filter-exclude -1 actionid-explore orderid-explore -1)
+	(up-find-local c: villager-class g: villager-count)
+	(up-remove-objects search-local object-data-target == tree-class)
+	(up-create-group 0 0 c: 0)
+	(up-modify-group-flag 1 c: 0)
+	(up-get-search-state local-total)
+	(up-remove-objects search-local object-data-index g:!= temporary-goal))
+(defrule
+	(up-set-target-object search-local c: 0)
+	(up-object-data object-data-target-id == -1)
+(or	(up-object-data object-data-order == orderid-attack)
+(or	(up-object-data object-data-order == orderid-build)
+(or	(up-object-data object-data-order == orderid-repair)
+	(up-object-data object-data-order == orderid-enter))))
+=>
+	(up-target-point 0 action-stop -1 -1))
+(defrule
+	(up-set-target-object search-local c: 0)
+	(up-object-data object-data-order == orderid-build)
+	(up-object-data object-data-target-id != -1)
+	(up-object-target-data object-data-status != status-pending)
+=>
+	(up-target-point 0 action-stop -1 -1))
+(defrule
+	(up-set-target-object search-local c: 0)
+	(up-compare-goal temporary-goal g:< local-total)
+=>
+	(up-modify-goal temporary-goal c:+ 1)
+	(up-set-group search-local c: 0)
+	(up-remove-objects search-local object-data-index g:!= temporary-goal)
+	(up-jump-rule -3))
+(defrule
+	(true)
+=>
+	(up-modify-group-flag 0 c: 0)
+	(up-reset-group c: 0))
+(defrule
+	(difficulty >= easy)
+=>
+	(set-difficulty-parameter ability-to-maintain-distance 90)
+	(set-difficulty-parameter ability-to-dodge-missiles 90)
+	(disable-self))
+(defrule
+	(difficulty == moderate)
+=>
+	(set-difficulty-parameter ability-to-maintain-distance 75)
+	(set-difficulty-parameter ability-to-dodge-missiles 75)
+	(disable-self))
+(defrule
+	(difficulty <= hard)
+=>
+	(set-difficulty-parameter ability-to-maintain-distance 60)
+	(set-difficulty-parameter ability-to-dodge-missiles 60)
+	(disable-self))

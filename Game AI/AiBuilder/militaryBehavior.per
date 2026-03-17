@@ -1,0 +1,90 @@
+
+(defrule
+	(up-compare-goal military-spread-time <= 0)
+=>
+	(up-jump-rule 3))
+(defrule
+	(goal spread-units 0)
+	(up-timer-status unit-spread-timer != timer-running)
+=>
+	(up-set-timer c: unit-spread-timer g: military-spread-interval)
+	(up-jump-rule 2)
+	(disable-self))
+(defrule
+	(goal spread-units 1)
+	(timer-triggered unit-spread-timer)
+=>
+	(set-strategic-number sn-task-ungrouped-soldiers 0)
+	(set-goal spread-units 0); sn-task-ungrouped-soldiers always 1 as a fact
+	(up-set-timer c: unit-spread-timer g: military-spread-interval))
+(defrule
+	(goal spread-units 0)
+	(up-timer-status unit-spread-timer != timer-running)
+=>
+	(set-strategic-number sn-task-ungrouped-soldiers 1)
+	(set-goal spread-units 1)
+	(up-set-timer c: unit-spread-timer g: military-spread-time))
+
+(defrule
+	(players-building-count any-enemy >= 1)
+=>
+	(up-find-player enemy find-closest temporary-goal)
+	(up-modify-sn sn-target-player-number g:= temporary-goal))
+
+(defrule
+(or	(up-compare-goal preferred-target-player <= 0)
+	(up-compare-goal preferred-target-player >= 9))
+=>
+	(up-jump-rule 3))
+(defrule
+	(true)
+=>
+	(up-modify-goal temporary-goal s:= sn-target-player-number)
+	(up-modify-sn sn-target-player-number g:= preferred-target-player))
+(defrule
+	(players-building-count target-player >= 1)
+	(player-in-game target-player)
+(not	(stance-toward target-player ally))
+=>
+	(up-jump-rule 1))
+(defrule
+	(true)
+=>
+	(up-modify-sn sn-target-player-number g:= temporary-goal))
+
+(defrule
+	(true)
+=>
+	(up-modify-sn sn-focus-player-number s:= sn-target-player-number))
+
+(defrule
+(or	(goal allow-wall-targeting 0)
+	(goal allow-wall-targeting 1))
+=>
+	(up-modify-sn sn-wall-targeting-mode g:= allow-wall-targeting))
+
+(defrule
+	(up-compare-goal land-attack-delay >= 0)
+	(up-compare-goal land-attack-percentage >= 1)
+	(up-compare-goal gl-game-time g:>= land-attack-delay)
+	(defend-soldier-count g:>= land-attack-requirement)
+	(up-timer-status land-attack-timer != timer-running)
+=>
+	(chat-local-to-self "land attack")
+	(up-modify-sn sn-percent-attack-soldiers g:= land-attack-percentage)
+	(set-strategic-number sn-percent-attack-boats 0)
+	(attack-now)
+	(up-set-timer c: land-attack-timer g: land-attack-interval)
+	(up-jump-rule 1))
+(defrule
+	(up-compare-goal naval-attack-delay >= 0)
+	(up-compare-goal naval-attack-percentage >= 1)
+	(up-compare-goal gl-game-time g:>= naval-attack-delay)
+	(warboat-count > 0)
+	(up-timer-status naval-attack-timer != timer-running)
+=>
+	(chat-local-to-self "naval attack")
+	(up-modify-sn sn-percent-attack-boats g:= naval-attack-percentage)
+	(set-strategic-number sn-percent-attack-soldiers 0)
+	(attack-now)
+	(up-set-timer c: naval-attack-timer g: naval-attack-interval))

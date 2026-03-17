@@ -1,0 +1,229 @@
+(defrule
+	(unit-type-count-total transport-ship g:< desired-number-transports)
+	(can-train transport-ship)
+=>
+	(train transport-ship))
+(defrule
+	(unit-type-count-total cannon-galleon-line g:< desired-number-cannongalleons)
+	(can-train cannon-galleon-line)
+=>
+	(train cannon-galleon-line))
+(defrule
+	(unit-type-count-total trebuchet-set g:< desired-number-trebuchets)
+	(can-train trebuchet)
+=>
+	(train trebuchet))
+(defrule
+	(unit-type-count-total bombard-cannon g:< desired-number-bombardcannons)
+	(can-train bombard-cannon)
+=>
+	(train bombard-cannon))
+(defrule
+	(unit-type-count-total battering-ram-line g:< desired-number-batteringrams)
+	(can-train battering-ram-line)
+=>
+	(train battering-ram-line))
+(defrule
+	(unit-type-count-total siege-tower g:< desired-number-siegetowers)
+	(can-train siege-tower)
+=>
+	(train siege-tower))
+(defrule
+	(unit-type-count-total petard g:< desired-number-petards)
+	(can-train petard)
+=>
+	(train petard))
+(defrule
+	(unit-type-count-total my-unique-unit-line g:< desired-number-uniqueunits)
+	(civ-selected gothic)
+(or	(can-train barracks-huskarl)
+	(can-train elite-barracks-huskarl))
+=>
+	(train barracks-huskarl)
+	(train elite-barracks-huskarl))
+(defrule
+	(unit-type-count-total my-unique-unit-line g:< desired-number-uniqueunits)
+	(civ-selected hun)
+(or	(can-train stable-tarkan)
+	(can-train elite-stable-tarkan))
+=>
+	(train stable-tarkan)
+	(train elite-stable-tarkan))
+(defrule
+	(unit-type-count-total my-unique-unit-line g:< desired-number-uniqueunits)
+	(civ-selected bulgarians)
+(or	(can-train krepost-konnik)
+	(can-train elite-krepost-konnik))
+=>
+	(train krepost-konnik)
+	(train elite-krepost-konnik))
+(defrule
+	(unit-type-count-total my-unique-unit-line g:< desired-number-uniqueunits)
+	(can-train my-unique-unit-line)
+=>
+	(train my-unique-unit-line))
+(defrule
+	(unit-type-count-total missionary g:< desired-number-missionaries)
+	(can-train missionary)
+=>
+	(train missionary))
+(defrule
+	(unit-type-count-total monk-set g:< desired-number-monks)
+	(can-train monk)
+=>
+	(train monk))
+(defrule
+	(unit-type-count-total mangonel-line g:< desired-number-mangonels)
+	(can-train mangonel-line)
+=>
+	(train mangonel-line))
+(defrule
+	(unit-type-count-total scorpion-line g:< desired-number-scorpions)
+	(can-train scorpion-line)
+=>
+	(train scorpion-line))
+(defrule
+	(unit-type-count-total flaming-camel g:< desired-number-flamingcamels)
+	(can-train flaming-camel)
+=>
+	(train flaming-camel))
+(defrule
+	(unit-type-count-total knight-line g:< desired-number-knights)
+	(can-train knight-line)
+=>
+	(train knight-line))
+(defrule
+	(unit-type-count-total militiaman-line g:< desired-number-militias)
+	(can-train militiaman-line)
+=>
+	(train militiaman-line))
+(defrule
+	(unit-type-count-total hand-cannoneer g:< desired-number-handcannoneers)
+	(can-train hand-cannoneer)
+=>
+	(train hand-cannoneer))
+(defrule
+	(unit-type-count-total archer-line g:< desired-number-archers)
+	(can-train archer-line)
+=>
+	(train archer-line))
+(defrule
+	(unit-type-count-total cavalry-archer-line g:< desired-number-cavalryarchers)
+	(can-train cavalry-archer-line)
+=>
+	(train cavalry-archer-line))
+(defrule
+	(unit-type-count-total eagle-warrior-line g:< desired-number-eaglescouts)
+	(can-train eagle-warrior-line)
+=>
+	(train eagle-warrior-line))
+(defrule
+	(unit-type-count-total battle-elephant-line g:< desired-number-battleelephants)
+	(can-train battle-elephant-line)
+=>
+	(train battle-elephant-line))
+(defrule
+	(unit-type-count-total slinger g:< desired-number-slingers)
+	(can-train slinger)
+=>
+	(train slinger))
+(defrule
+	(unit-type-count-total spearman-line g:< desired-number-spearmen)
+	(can-train spearman-line)
+=>
+	(train spearman-line))
+(defrule
+	(unit-type-count-total condottiero g:< desired-number-condottieri)
+	(unit-type-count-total condottiero-placeholder g:< desired-number-condottieri)
+	(can-train condottiero)
+=>
+	(train condottiero))
+(defrule
+	(unit-type-count-total camel-line g:< desired-number-camelriders)
+	(can-train camel-line)
+=>
+	(train camel-line))
+(defrule
+	(unit-type-count-total skirmisher-line g:< desired-number-skirmishers)
+	(can-train skirmisher-line)
+=>
+	(train skirmisher-line))
+(defrule
+	(unit-type-count-total genitour-line g:< desired-number-genitours)
+	(unit-type-count-total genitour-placeholder g:< desired-number-genitours)
+	(can-train genitour-placeholder)
+=>
+	(train genitour-placeholder))
+(defrule
+	(unit-type-count-total steppe-lancer-line g:< desired-number-steppelancers)
+	(can-train steppe-lancer-line)
+=>
+	(train steppe-lancer-line))
+(defrule
+	(unit-type-count-total scout-cavalry-line g:< desired-number-scoutcavalry)
+	(can-train scout-cavalry-line)
+=>
+	(train scout-cavalry-line))
+(defrule
+	(unit-type-count-total demolition-ship-line g:< desired-number-demoships)
+	(can-train demolition-ship-line)
+=>
+	(train demolition-ship-line))
+(defrule
+	(unit-type-count-total turtle-ship-line g:< desired-number-turtleships)
+	(can-train turtle-ship-line)
+=>
+	(train turtle-ship-line))
+(defrule
+	(unit-type-count-total longboat-line g:< desired-number-longboats)
+	(can-train longboat-line)
+=>
+	(train longboat-line))
+(defrule
+	(unit-type-count-total caravel-line g:< desired-number-caravels)
+	(can-train caravel-line)
+=>
+	(train caravel-line))
+(defrule
+	(unit-type-count-total fire-ship-line g:< desired-number-fireships)
+	(can-train fire-ship-line)
+=>
+	(train fire-ship-line))
+(defrule
+	(unit-type-count-total galley-line g:< desired-number-galleys)
+	(can-train galley-line)
+=>
+	(train galley-line))
+(defrule
+	(unit-type-count-total mercenary-kipchak g:< desired-number-mercenarykipchaks)
+(or	(can-train 1259)
+	(can-train mercenary-kipchak))
+=>
+	(train 1259)
+	(train mercenary-kipchak))
+(defrule
+	(unit-type-count-total xolotl-warrior g:< desired-number-xolotls)
+	(can-train xolotl-warrior)
+=>
+	(train xolotl-warrior))
+
+(defrule
+	(unit-type-count-total shrivamsha-rider-line g:< desired-number-shirvamsha-riders)
+	(can-train shrivamsha-rider)
+=>
+	(train shrivamsha-rider)
+)
+
+(defrule
+	(unit-type-count-total armored-elephant-line g:< desired-number-armored-elephants)
+	(can-train armored-elephant)
+=>
+	(train armored-elephant)
+)
+
+(defrule
+	(unit-type-count-total elephant-archer-line g:< desired-number-elephant-archers)
+	(can-train elephant-archer)
+=>
+	(train elephant-archer)
+)
