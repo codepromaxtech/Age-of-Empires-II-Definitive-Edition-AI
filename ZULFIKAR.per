@@ -259,7 +259,7 @@
     (disable-self)
 )
 
-; --- Rule 3: Camp Distances, Queuing & Scouting ---
+; --- Rule 3: Camp Distances, Queuing & Anti-Civilian Explorer ---
 (defrule
     (true)
 =>
@@ -271,13 +271,14 @@
     (set-strategic-number sn-enable-research-queue 1)
     (set-strategic-number sn-total-number-explorers 1)
     (set-strategic-number sn-number-explore-groups 1)
-    (set-strategic-number sn-initial-exploration-required 0)
-    (set-strategic-number sn-percent-exploration-required 40)
+    (set-strategic-number sn-cap-civilian-explorers 0)
+    (set-strategic-number sn-percent-civilian-explorers 0)
+    (set-strategic-number sn-minimum-civilian-explorers 0)
     (set-strategic-number sn-home-exploration-time 260)
     (disable-self)
 )
 
-; --- Rule 4: Dark Age Economy, Boar Hunting & Repair ---
+; --- Rule 4: Dark Age Economy, Builders, Boar Hunting & Repair ---
 (defrule
     (true)
 =>
@@ -285,7 +286,9 @@
     (set-strategic-number sn-wood-gatherer-percentage 35)
     (set-strategic-number sn-gold-gatherer-percentage 0)
     (set-strategic-number sn-stone-gatherer-percentage 0)
-    (set-strategic-number sn-percent-civilian-gatherers 100)
+    (set-strategic-number sn-percent-civilian-gatherers 75)
+    (set-strategic-number sn-percent-civilian-builders 25)
+    (set-strategic-number sn-cap-civilian-builders 16)
     (set-strategic-number sn-enable-boar-hunting 2)
     (set-strategic-number sn-minimum-boar-hunt-group-size 1)
     (set-strategic-number sn-minimum-number-hunters 6)
@@ -740,6 +743,42 @@
     (set-strategic-number sn-wood-gatherer-percentage 32)
     (set-strategic-number sn-food-gatherer-percentage 20)
     (set-strategic-number sn-stone-gatherer-percentage 6)
+)
+
+; ------------------------------------------------------------
+; 5. MEGA-BANK & DEATH MATCH (20K+ Resources / Flooded Economy)
+; When resources exceed 4000 or in Death Match mode, all gathering stops
+; and 100% of villagers become dedicated builders to spam infrastructure!
+; ------------------------------------------------------------
+(defrule
+    (or (death-match-game)
+    (or (wood-amount > 4000)
+        (food-amount > 4000)))
+=>
+    (set-strategic-number sn-percent-civilian-explorers 0)
+    (set-strategic-number sn-cap-civilian-explorers 0)
+    (set-strategic-number sn-minimum-civilian-explorers 0)
+    (set-strategic-number sn-total-number-explorers 0)
+    (set-strategic-number sn-percent-civilian-builders 100)
+    (set-strategic-number sn-cap-civilian-builders 200)
+    (set-strategic-number sn-percent-civilian-gatherers 0)
+    (set-strategic-number sn-wood-gatherer-percentage 0)
+    (set-strategic-number sn-food-gatherer-percentage 0)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-maximum-town-size 45)
+    (set-strategic-number sn-safe-town-size 50)
+)
+
+(defrule
+    (not (death-match-game))
+    (wood-amount < 2000)
+    (food-amount < 2000)
+    (current-age >= imperial-age)
+=>
+    (set-strategic-number sn-percent-civilian-gatherers 75)
+    (set-strategic-number sn-percent-civilian-builders 25)
+    (set-strategic-number sn-cap-civilian-builders 16)
 )
 
 ; ------------------------------------------------------------
@@ -1389,6 +1428,105 @@
     (build castle)
 )
 
+; Mega-Bank / Death Match: Fortify with up to 8 Castles
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (stone-amount >= 1300))
+    (building-type-count-total castle < 8)
+    (can-build castle)
+=>
+    (build castle)
+)
+
+; Mega-Bank / Death Match: Rapid House Spamming
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (wood-amount >= 3000))
+    (housing-headroom < 100)
+    (population-headroom > 0)
+    (not (civ-selected hun))
+    (can-build house)
+=>
+    (build house)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (wood-amount >= 5000))
+    (housing-headroom < 160)
+    (population-headroom > 0)
+    (not (civ-selected hun))
+    (can-build house)
+=>
+    (build house)
+)
+
+; Mega-Bank / Death Match: Mass Production Buildings (7 Barracks, Stables, Ranges)
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (wood-amount >= 3000))
+    (building-type-count-total barracks < 7)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (wood-amount >= 3000))
+    (building-type-count-total stable < 7)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (wood-amount >= 3000))
+    (building-type-count-total archery-range < 7)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (wood-amount >= 3000))
+    (building-type-count-total siege-workshop < 4)
+    (can-build siege-workshop)
+=>
+    (build siege-workshop)
+)
+
+; Mega-Bank / Death Match: Perimeter Stone Walls & Gates
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (stone-amount >= 1000))
+    (can-build-wall 2 stone-wall-line)
+=>
+    (enable-wall-placement 2)
+    (build-wall 2 stone-wall-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (stone-amount >= 1000))
+    (building-type-count-total gate < 6)
+    (can-build-gate 2)
+=>
+    (set-strategic-number sn-gate-type-for-wall 1)
+    (build-gate 2)
+)
+
 ; Trebuchets & Bombard Cannons
 (defrule
     (current-age >= imperial-age)
@@ -1400,7 +1538,27 @@
 
 (defrule
     (current-age >= imperial-age)
+    (or (death-match-game)
+        (gold-amount >= 3000))
+    (unit-type-count-total trebuchet < 6)
+    (can-train trebuchet)
+=>
+    (train trebuchet)
+)
+
+(defrule
+    (current-age >= imperial-age)
     (unit-type-count-total bombard-cannon < 3)
+    (can-train bombard-cannon)
+=>
+    (train bombard-cannon)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (gold-amount >= 3000))
+    (unit-type-count-total bombard-cannon < 6)
     (can-train bombard-cannon)
 =>
     (train bombard-cannon)
@@ -1470,6 +1628,18 @@
     (current-age >= imperial-age)
     (building-type-count-total castle >= 1)
     (unit-type-count-total my-unique-unit-line < 25)
+    (can-train my-unique-unit-line)
+=>
+    (train my-unique-unit-line)
+)
+
+; Mega-Bank / Death Match: 45 Unique Units
+(defrule
+    (current-age >= imperial-age)
+    (or (death-match-game)
+        (gold-amount >= 3000))
+    (building-type-count-total castle >= 1)
+    (unit-type-count-total my-unique-unit-line < 45)
     (can-train my-unique-unit-line)
 =>
     (train my-unique-unit-line)
