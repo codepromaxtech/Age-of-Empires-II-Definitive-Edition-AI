@@ -38,6 +38,7 @@
 (defconst style-closed 2)
 (defconst style-water 3)
 (defconst style-nomad 4)
+(defconst style-hybrid 5)
 
 ; --- Map Size Enums ---
 (defconst size-small 1)
@@ -343,15 +344,27 @@
     (disable-self)
 )
 
-; --- Detect Water / Island Maps (Islands, Team Islands, Migration, Baltic) ---
+; --- Detect Water / Island Maps (Islands, Team Islands, Migration, Pacific Islands) ---
 (defrule
     (or (map-type islands)
     (or (map-type team-islands)
     (or (map-type migration)
-        (map-type baltic))))
+        (map-type pacific-islands))))
 =>
     (set-goal gl-map-style style-water)
     (chat-local-to-self "ZULFIKAR: Water Map detected -> Naval dominance focus.")
+    (disable-self)
+)
+
+; --- Detect Hybrid Maps (Rivers, Baltic, Coastal, Four Lakes) ---
+(defrule
+    (or (map-type rivers)
+    (or (map-type coastal)
+    (or (map-type four-lakes)
+        (map-type baltic))))
+=>
+    (set-goal gl-map-style style-hybrid)
+    (chat-local-to-self "ZULFIKAR: Hybrid Map detected -> Land & Naval balance.")
     (disable-self)
 )
 
@@ -435,9 +448,8 @@
 
 ; --- Large / Giant / Ludikris Maps (Massive Scale) ---
 (defrule
-    (or (map-size large)
     (or (map-size giant)
-        (map-size ludikris)))
+        (map-size ludikris))
 =>
     (set-goal gl-map-size size-large)
     ; Scale exploration and camps outwards
@@ -1655,11 +1667,12 @@
     (research ri-architecture)
 )
 
-; --- Wonder Race & Wonder Victory Mode ---
+; --- Wonder of the World (Standard Victory & Wonder Race) ---
 (defrule
-    (or (victory-condition wonder)
-        (wonder-race-game))
     (current-age >= imperial-age)
+    (wood-amount >= 1200)
+    (gold-amount >= 1200)
+    (stone-amount >= 1200)
     (building-type-count-total wonder < 1)
     (can-build wonder)
 =>
