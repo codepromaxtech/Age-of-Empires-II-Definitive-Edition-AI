@@ -44,7 +44,13 @@ Detects every civilization in AoE2 DE and aligns its army and technology tree:
 - **Camel Civs:** Saracens, Gurjaras, Berbers.
 - **Universal Unique Units:** Trains `my-unique-unit-line` at Castles for all civilizations, researching both Unique Technologies and Elite upgrades.
 
-### 5. Tactical Wave Combat & Fair Play
+### 5. Threat-Matched Defensive Interception & Anti-Baiting
+- **Anti-Baiting Reserve Management:** For minor harassment raids (<6 enemy units), ZULFIKAR deploys an agile 4–8 unit counter squad while keeping its main battle army stationed in reserve at the town center, completely preventing it from being baited out of position by decoy units.
+- **Threat-Specific Counter Dispatch:**
+  - **Enemy Cavalry Raid:** Immediately tasks Spearmen/Pikemen/Halberdiers & Camels to intercept raiding horses.
+  - **Enemy Archer Raid:** Dispatches Skirmishers, high-armor Knights, and Mangonels to close distance, while holding fragile Spearmen back from arrow fire.
+  - **Enemy Siege Threat:** Commands fast mobile cavalry (Scouts, Knights, Hussars) to flank and snipe enemy Mangonels, Battering Rams, and Trebuchets.
+  - **Major Fortress Invasion (>=6 units):** Mobilizes the entire fortress garrison to eliminate the breach and secure the Citadel.
 - **Coordinated Wave Attacks:** Paces assaults in synchronized waves (Feudal raids of 8+, Castle pushes of 20+ with siege, Imperial deathballs of 40–80+ with Trebuchets).
 - **Intelligent Regrouping:** When army strength drops below safety margins, units fall back to Castles and Town Centers to reinforce before launching the next wave.
 - **100% Fair Play:** Completely free of resource cheats (`up-cc-add-resource` removed). Wins through superior scouting, macro, and tactical decision-making.

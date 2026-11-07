@@ -1921,17 +1921,97 @@
     (enable-timer gl-wave-timer 60)
 )
 
-; Counter-Attack: Immediate Homeland Defense
+; --- THREAT-MATCHED DEFENSIVE INTERCEPTION MATRIX ---
+; Instead of mindlessly rallying 100% of all troops to every raid,
+; ZULFIKAR analyzes the threat type and dispatches the exact hard counter
+; while maintaining reserves so it never falls for decoy raids.
+
+; --- 1. MINOR HARASSMENT: Decoy / Small Raid (< 6 enemy military) ---
+; Anti-Baiting: Deploy only an agile 4-8 unit counter squad, keeping main army in reserve!
 (defrule
     (town-under-attack)
-    (military-population >= 6)
+    (players-military-population any-enemy < 6)
+    (military-population >= 4)
+=>
+    (set-strategic-number sn-number-attack-groups 1)
+    (set-strategic-number sn-minimum-attack-group-size 3)
+    (set-strategic-number sn-maximum-attack-group-size 8)
+    (set-strategic-number sn-percent-attack-soldiers 40)
+    (set-strategic-number sn-maximum-town-size 45)
+    (attack-now)
+)
+
+; --- 2. THREAT: ENEMY CAVALRY RAID (Scouts / Knights / Camels) ---
+; Dispatch anti-cavalry response: Spearmen/Pikemen/Halberdiers & Camels intercept
+(defrule
+    (town-under-attack)
+    (or (players-unit-type-count any-enemy knight-line >= 1)
+        (players-unit-type-count any-enemy scout-cavalry-line >= 1))
+    (or (unit-type-count-total spearman-line >= 2)
+        (unit-type-count-total camel-line >= 2))
 =>
     (set-strategic-number sn-number-attack-groups 2)
     (set-strategic-number sn-minimum-attack-group-size 4)
-    (set-strategic-number sn-maximum-attack-group-size 30)
-    (set-strategic-number sn-percent-attack-soldiers 100)
-    (set-strategic-number sn-maximum-town-size 60)
+    (set-strategic-number sn-maximum-attack-group-size 15)
+    (set-strategic-number sn-percent-attack-soldiers 60)
+    (set-strategic-number sn-maximum-town-size 50)
     (attack-now)
+    (chat-local-to-self "ZULFIKAR: Cavalry raid! Intercepting with anti-cavalry.")
+)
+
+; --- 3. THREAT: ENEMY ARCHER / RANGED RAID ---
+; Dispatch high pierce armor & skirmishers: Skirmishers, Knights, Mangonels
+; (Keeps spearmen back from arrow slaughter)
+(defrule
+    (town-under-attack)
+    (or (players-unit-type-count any-enemy archer-line >= 2)
+        (players-unit-type-count any-enemy skirmisher-line >= 2))
+    (or (unit-type-count-total skirmisher-line >= 2)
+        (or (unit-type-count-total knight-line >= 2)
+            (unit-type-count-total mangonel-line >= 1)))
+=>
+    (set-strategic-number sn-number-attack-groups 2)
+    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-maximum-attack-group-size 18)
+    (set-strategic-number sn-percent-attack-soldiers 65)
+    (set-strategic-number sn-maximum-town-size 50)
+    (attack-now)
+    (chat-local-to-self "ZULFIKAR: Archer raid! Deploying skirmishers and cavalry.")
+)
+
+; --- 4. THREAT: ENEMY SIEGE PUSH (Mangonels / Rams / Trebuchets) ---
+; Priority: Mobile cavalry (Scouts, Knights, Hussars) flank and snipe siege weapons!
+(defrule
+    (town-under-attack)
+    (or (players-unit-type-count any-enemy mangonel-line >= 1)
+        (or (players-unit-type-count any-enemy battering-ram-line >= 1)
+            (players-unit-type-count any-enemy trebuchet >= 1)))
+    (or (unit-type-count-total scout-cavalry-line >= 2)
+        (unit-type-count-total knight-line >= 2))
+=>
+    (set-strategic-number sn-number-attack-groups 2)
+    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-maximum-attack-group-size 15)
+    (set-strategic-number sn-percent-attack-soldiers 70)
+    (set-strategic-number sn-maximum-town-size 65)
+    (attack-now)
+    (chat-local-to-self "ZULFIKAR: Enemy siege detected! Cavalry charging siege engines!")
+)
+
+; --- 5. MAJOR INVASION / TOWN BREACH (Enemy army >= 6 entering base) ---
+; Existential threat: Mobilize full fortress garrison to repel the assault!
+(defrule
+    (town-under-attack)
+    (players-military-population any-enemy >= 6)
+    (military-population >= 6)
+=>
+    (set-strategic-number sn-number-attack-groups 3)
+    (set-strategic-number sn-minimum-attack-group-size 6)
+    (set-strategic-number sn-maximum-attack-group-size 35)
+    (set-strategic-number sn-percent-attack-soldiers 100)
+    (set-strategic-number sn-maximum-town-size 70)
+    (attack-now)
+    (chat-to-all "ZULFIKAR: Citadel breached! Full fortress defense mobilized!")
 )
 
 ; Regroup at fortress when army is low
