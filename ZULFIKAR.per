@@ -132,6 +132,9 @@
 (defconst sn-preferred-mill-placement 253)
 (defconst sn-minimum-dropsite-buffer 271)
 (defconst sn-dock-placement-mode 278)
+(defconst sn-free-siege-targeting 282)
+(defconst relic 285)
+(defconst monk-with-relic 802)
 (defconst ri-cannon-galleon 36)
 
 ; --- Research Identifiers ---
@@ -318,6 +321,10 @@
     (set-strategic-number sn-coop-share-information 1)
     (set-strategic-number sn-coop-share-attacking 1)
     (set-strategic-number sn-building-targeting-mode 1)
+    (set-strategic-number sn-free-siege-targeting 0)
+    (set-strategic-number sn-target-evaluation-siege-weapon 500)
+    (set-strategic-number sn-target-evaluation-damage-capability 25)
+    (set-strategic-number sn-target-evaluation-time-kill-ratio 50)
     (disable-self)
 )
 
@@ -1525,10 +1532,30 @@
 
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total battering-ram-line < 2)
+    (unit-type-count-total battering-ram-line < 3)
     (can-train battering-ram-line)
 =>
     (train battering-ram-line)
+)
+
+; Zero-friendly-fire linear pierce support behind frontline melee
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total scorpion-line < 3)
+    (can-train scorpion-line)
+=>
+    (train scorpion-line)
+)
+
+; Instant Wall and Gate Breaching (avoid troops dying at bottleneck)
+(defrule
+    (current-age >= castle-age)
+    (or (players-building-type-count target-player stone-wall-line >= 1)
+        (players-building-type-count target-player gate >= 1))
+    (unit-type-count-total petard < 2)
+    (can-train petard)
+=>
+    (train petard)
 )
 
 (defrule
@@ -1767,6 +1794,56 @@
     (can-build siege-workshop)
 =>
     (build siege-workshop)
+)
+
+; Imperial Arrow-Sponge Vanguard (Absorbs 180-195 pierce armor)
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total battering-ram-line < 5)
+    (can-train battering-ram-line)
+=>
+    (train battering-ram-line)
+)
+
+; Imperial Zero-Friendly-Fire Fire Support
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total scorpion-line < 4)
+    (can-train scorpion-line)
+=>
+    (train scorpion-line)
+)
+
+; Imperial Fast Breaching (Walls and Gates)
+(defrule
+    (current-age >= imperial-age)
+    (or (players-building-type-count target-player stone-wall-line >= 1)
+        (players-building-type-count target-player gate >= 1))
+    (unit-type-count-total petard < 3)
+    (can-train petard)
+=>
+    (train petard)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-capped-ram)
+=>
+    (research ri-capped-ram)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-siege-ram)
+=>
+    (research ri-siege-ram)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-heavy-scorpion)
+=>
+    (research ri-heavy-scorpion)
 )
 
 (defrule
@@ -2632,6 +2709,53 @@
     (train scout-cavalry-line)
 )
 
+; Anti-Siege Long-Range Sniper (Snipes Onagers & Trebs to preserve forces)
+(defrule
+    (current-age >= imperial-age)
+    (or (players-unit-type-count target-player mangonel-line >= 1)
+        (or (players-unit-type-count target-player trebuchet >= 1)
+            (players-unit-type-count target-player bombard-cannon >= 1)))
+    (unit-type-count-total bombard-cannon < 4)
+    (can-train bombard-cannon)
+=>
+    (train bombard-cannon)
+    (chat-local-to-self "ZULFIKAR: Countering enemy siege with long-range Bombard Cannons.")
+)
+
+; Fortification Demolition (16-range standoff destruction vs Castles/Wonders)
+(defrule
+    (current-age >= imperial-age)
+    (or (players-building-type-count target-player castle >= 1)
+        (or (players-building-type-count target-player bombard-tower >= 1)
+            (players-building-type-count target-player wonder >= 1)))
+    (unit-type-count-total trebuchet < 5)
+    (can-train trebuchet)
+=>
+    (train trebuchet)
+)
+
+; Arrow-Sponge Vanguard (180-195 pierce armor absorbs Castle/TC arrows)
+(defrule
+    (current-age >= castle-age)
+    (or (players-building-type-count target-player castle >= 1)
+        (players-building-type-count target-player town-center >= 1))
+    (unit-type-count-total battering-ram-line < 4)
+    (can-train battering-ram-line)
+=>
+    (train battering-ram-line)
+)
+
+; Instant Wall & Gate Breaching (Eliminates bottleneck killzones)
+(defrule
+    (current-age >= castle-age)
+    (or (players-building-type-count target-player stone-wall-line >= 1)
+        (players-building-type-count target-player gate >= 1))
+    (unit-type-count-total petard < 3)
+    (can-train petard)
+=>
+    (train petard)
+)
+
 ; Universal baseline defenders
 (defrule
     (current-age >= feudal-age)
@@ -2832,6 +2956,91 @@
     (set-strategic-number sn-percent-attack-soldiers 100)
     (chat-to-all "ZULFIKAR: Enemy Wonder sighted! All forces converge!")
     (attack-now)
+)
+
+; --- STRATEGIC BATTLE PLAN: ARROW-ABSORPTION VANGUARD ---
+; When assaulting fortified enemy bases, Battering Rams lead the vanguard.
+; With 180-195 pierce armor, Rams absorb lethal Castle and Town Center arrow fire,
+; shielding squishy infantry, archers, and cavalry from being sacrificed.
+(defrule
+    (goal gl-attack-status 1)
+    (or (players-building-type-count target-player castle >= 1)
+        (players-building-type-count target-player town-center >= 1))
+    (unit-type-count-total battering-ram-line >= 1)
+=>
+    (set-strategic-number sn-target-evaluation-siege-weapon 600)
+    (set-strategic-number sn-target-evaluation-damage-capability 50)
+    (set-strategic-number sn-target-evaluation-range 100)
+    (chat-local-to-self "ZULFIKAR: Rams leading vanguard to absorb defensive arrow fire!")
+)
+
+; --- STRATEGIC BATTLE PLAN: STANDOFF SIEGE ANNIHILATION ---
+; When encountering Castles or Bombard Towers, Trebuchets and Bombard Cannons engage from
+; 12-16 standoff range. Main body provides protective escort rather than suicidal melee dives.
+(defrule
+    (current-age >= imperial-age)
+    (or (players-building-type-count target-player castle >= 1)
+        (players-building-type-count target-player bombard-tower >= 1))
+    (or (unit-type-count-total trebuchet >= 2)
+        (unit-type-count-total bombard-cannon >= 2))
+=>
+    (set-strategic-number sn-target-evaluation-siege-weapon 500)
+    (set-strategic-number sn-target-evaluation-close-by 200)
+    (set-strategic-number sn-target-evaluation-range 80)
+    (chat-local-to-self "ZULFIKAR: Standoff siege deployed! Fortifications under siege.")
+)
+
+; --- STRATEGIC BATTLE PLAN: FRIENDLY FIRE AVOIDANCE ---
+; Prohibits Mangonels/Onagers from firing blindly into friendly melee lines.
+; Keeps friendly fire setting active across all battle phases.
+(defrule
+    (true)
+=>
+    (set-strategic-number sn-free-siege-targeting 0)
+)
+
+; --- STRATEGIC BATTLE PLAN: RELIC LIBERATION ASSAULT ---
+; When an enemy captures relics, concentrate firepower to destroy their Monastery and liberate relics!
+(defrule
+    (current-age >= castle-age)
+    (enemy-captured-relics)
+    (players-building-type-count target-player monastery >= 1)
+    (military-population >= 15)
+=>
+    (set-strategic-number sn-target-evaluation-damage-capability 100)
+    (set-strategic-number sn-target-evaluation-range 120)
+    (set-goal gl-attack-status 1)
+    (attack-now)
+    (chat-local-to-self "ZULFIKAR: Enemy holds relics! Assaulting enemy monastery to liberate them.")
+)
+
+; --- STRATEGIC BATTLE PLAN: POST-DEFEAT RELIC RECLAMATION SWEEP ---
+; When an enemy resigns or is defeated, or dropped relics exist on the map (Player 0 Gaia):
+; Dispatch fast scouts to illuminate enemy ruins and train Monks to retrieve all dropped relics!
+(defrule
+    (current-age >= castle-age)
+    (or (player-resigned any-enemy)
+        (or (players-building-count target-player == 0)
+            (or (enemy-captured-relics)
+                (cc-players-unit-type-count 0 relic > 0))))
+    (building-type-count-total monastery >= 1)
+    (unit-type-count-total monk < 4)
+    (can-train monk)
+=>
+    (train monk)
+    (set-strategic-number sn-relic-return-distance 500)
+    (set-strategic-number sn-total-number-explorers 3)
+    (set-strategic-number sn-number-explore-groups 2)
+    (chat-local-to-self "ZULFIKAR: Enemy fallen / relics liberated! Monks and scouts sweeping map for relics.")
+)
+
+(defrule
+    (current-age >= castle-age)
+    (cc-players-unit-type-count 0 relic > 0)
+    (building-type-count-total monastery >= 1)
+    (unit-type-count-total monk >= 1)
+=>
+    (set-strategic-number sn-relic-return-distance 500)
 )
 ; ============================================================
 ; SECTION 14: VILLAGER GARRISON & RAID SURVIVAL
