@@ -2781,6 +2781,42 @@
 =>
     (train spearman-line)
 )
+
+; --- DEDICATED BODYGUARD ESCORT FOR LONG-RANGE SIEGE WEAPONS ---
+; Long-range siege weapons (Trebuchets, Bombard Cannons) are vulnerable to cavalry dives.
+; When siege engines are active, ZULFIKAR guarantees a permanent anti-cavalry bodyguard!
+(defrule
+    (current-age >= imperial-age)
+    (or (unit-type-count-total trebuchet >= 1)
+        (or (unit-type-count-total bombard-cannon >= 1)
+            (unit-type-count-total mangonel-line >= 2)))
+    (unit-type-count-total spearman-line < 28)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+; Fast camel anti-cavalry escort to intercept flanking knights
+(defrule
+    (current-age >= imperial-age)
+    (or (unit-type-count-total trebuchet >= 1)
+        (unit-type-count-total bombard-cannon >= 1))
+    (unit-type-count-total camel-line < 12)
+    (can-train camel-line)
+=>
+    (train camel-line)
+)
+
+; Anti-Monk / Anti-Archer screening forces protecting siege weapons
+(defrule
+    (current-age >= imperial-age)
+    (or (unit-type-count-total trebuchet >= 1)
+        (unit-type-count-total bombard-cannon >= 1))
+    (unit-type-count-total scout-cavalry-line < 8)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
 ; ============================================================
 ; SECTION 13: COMBAT LOGIC, RETALIATION & COHESIVE ATTACKS
 ; ============================================================
@@ -2989,6 +3025,36 @@
     (set-strategic-number sn-target-evaluation-close-by 200)
     (set-strategic-number sn-target-evaluation-range 80)
     (chat-local-to-self "ZULFIKAR: Standoff siege deployed! Fortifications under siege.")
+)
+
+; --- STRATEGIC BATTLE PLAN: LONG-RANGE SIEGE ESCORT & FORMATION PROTECTION ---
+; Trebuchets and Bombard Cannons require strict perimeter protection.
+; Tightens gather spacing so escorts form a protective ring directly around the siege weapons,
+; and prioritizes eliminating close-by dive units to prevent forces from abandoning siege.
+(defrule
+    (goal gl-attack-status 1)
+    (or (unit-type-count-total trebuchet >= 1)
+        (unit-type-count-total bombard-cannon >= 1))
+=>
+    (set-strategic-number sn-attack-group-gather-spacing 3)
+    (set-strategic-number sn-target-evaluation-close-by 300)
+    (set-strategic-number sn-target-evaluation-distance -150)
+    (set-strategic-number sn-target-evaluation-range 70)
+    (chat-local-to-self "ZULFIKAR: Long-range siege deployed! Protective bodyguard perimeter locked.")
+)
+
+; Emergency Cavalry Dive Interception: Intercept cavalry charging our siege line!
+(defrule
+    (goal gl-attack-status 1)
+    (or (unit-type-count-total trebuchet >= 1)
+        (unit-type-count-total bombard-cannon >= 1))
+    (or (players-unit-type-count any-enemy knight-line >= 1)
+        (players-unit-type-count any-enemy scout-cavalry-line >= 1))
+=>
+    (set-strategic-number sn-target-evaluation-close-by 400)
+    (set-strategic-number sn-target-evaluation-damage-capability 150)
+    (set-strategic-number sn-target-evaluation-distance -200)
+    (chat-local-to-self "ZULFIKAR: Enemy cavalry diving siege line! Escorts intercepting immediately.")
 )
 
 ; --- STRATEGIC BATTLE PLAN: FRIENDLY FIRE AVOIDANCE ---
@@ -3373,6 +3439,18 @@
     (set-strategic-number sn-target-evaluation-siege-weapon 500)
     (attack-now)
     (chat-local-to-self "ZULFIKAR: Naval siege fleet advancing! Coastal bombardment initiated.")
+)
+
+; Fast Fire Ship & Warship Escort Screen for Cannon Galleons & Dromons
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
+    (or (unit-type-count-total cannon-galleon-line >= 1)
+        (unit-type-count-total dromon >= 1))
+    (unit-type-count-total fire-ship-line < 16)
+    (can-train fire-ship-line)
+=>
+    (train fire-ship-line)
 )
 
 ; 4. Defensive Fleet Scramble: Intercept enemy warships threatening our shoreline
