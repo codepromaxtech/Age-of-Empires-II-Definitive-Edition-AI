@@ -28,6 +28,10 @@
 (defconst gl-attack-status 5)      ; 0=Regrouping/Defending, 1=Attacking
 (defconst gl-target-player 6)
 (defconst gl-saving-for-imperial 7) ; 0=Normal training, 1=Budgeting for Imperial Age advance
+(defconst gl-flare-x 8)             ; Action beacon flare X coordinate
+(defconst gl-flare-y 9)             ; Action beacon flare Y coordinate
+(defconst position-center 0)        ; Center of player town / citadel
+(defconst position-target 10)       ; Target player coordinates
 
 ; --- Timers ---
 (defconst gl-wave-timer 1)         ; Attack wave pacing
@@ -3045,6 +3049,8 @@
     (set-strategic-number sn-target-evaluation-in-progress -120)
     (set-strategic-number sn-target-evaluation-attack-attempts -80)
     (set-goal gl-attack-status 1)
+    (up-get-point position-target gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
     (disable-timer gl-wave-timer)
     (enable-timer gl-wave-timer 60)
@@ -3068,6 +3074,8 @@
     (set-strategic-number sn-target-evaluation-in-progress -160)
     (set-strategic-number sn-target-evaluation-attack-attempts -100)
     (set-goal gl-attack-status 1)
+    (up-get-point position-target gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
     (disable-timer gl-wave-timer)
     (enable-timer gl-wave-timer 60)
@@ -3091,6 +3099,8 @@
     (set-strategic-number sn-target-evaluation-in-progress -180)
     (set-strategic-number sn-target-evaluation-attack-attempts -120)
     (set-goal gl-attack-status 1)
+    (up-get-point position-target gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
     (disable-timer gl-wave-timer)
     (enable-timer gl-wave-timer 60)
@@ -3113,6 +3123,8 @@
     (set-strategic-number sn-target-evaluation-in-progress -220)
     (set-strategic-number sn-target-evaluation-attack-attempts -150)
     (set-goal gl-attack-status 1)
+    (up-get-point position-target gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
     (disable-timer gl-wave-timer)
     (enable-timer gl-wave-timer 60)
@@ -3136,6 +3148,8 @@
     (set-strategic-number sn-percent-attack-soldiers 40)
     (set-strategic-number sn-target-evaluation-in-progress -100)
     (set-strategic-number sn-maximum-town-size 45)
+    (up-get-point position-center gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
 )
 
@@ -3155,6 +3169,8 @@
     (set-strategic-number sn-target-evaluation-in-progress -120)
     (set-strategic-number sn-target-evaluation-randomness 250)
     (set-strategic-number sn-maximum-town-size 50)
+    (up-get-point position-center gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
     (chat-local-to-self "ZULFIKAR: Cavalry raid! Intercepting with anti-cavalry squads.")
 )
@@ -3176,6 +3192,8 @@
     (set-strategic-number sn-target-evaluation-in-progress -120)
     (set-strategic-number sn-target-evaluation-randomness 250)
     (set-strategic-number sn-maximum-town-size 50)
+    (up-get-point position-center gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
     (chat-local-to-self "ZULFIKAR: Archer raid! Deploying skirmishers and cavalry squads.")
 )
@@ -3197,6 +3215,8 @@
     (set-strategic-number sn-target-evaluation-in-progress -120)
     (set-strategic-number sn-target-evaluation-randomness 250)
     (set-strategic-number sn-maximum-town-size 65)
+    (up-get-point position-center gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
     (chat-local-to-self "ZULFIKAR: Enemy siege detected! Cavalry squads charging siege engines!")
 )
@@ -3215,6 +3235,8 @@
     (set-strategic-number sn-target-evaluation-in-progress -150)
     (set-strategic-number sn-target-evaluation-randomness 300)
     (set-strategic-number sn-maximum-town-size 70)
+    (up-get-point position-center gl-flare-x)
+    (up-send-flare gl-flare-x)
     (attack-now)
     (chat-to-all "ZULFIKAR: Citadel breached! Full fortress defense mobilized across all sectors!")
 )
@@ -3242,6 +3264,8 @@
     (set-strategic-number sn-minimum-attack-group-size 2)
     (set-strategic-number sn-maximum-attack-group-size 100)
     (set-strategic-number sn-percent-attack-soldiers 100)
+    (up-get-point position-target gl-flare-x)
+    (up-send-flare gl-flare-x)
     (chat-to-all "ZULFIKAR: Enemy Wonder sighted! All forces converge!")
     (attack-now)
 )
@@ -3275,6 +3299,8 @@
     (set-strategic-number sn-target-evaluation-siege-weapon 500)
     (set-strategic-number sn-target-evaluation-distance 200)
     (set-strategic-number sn-target-evaluation-range 80)
+    (up-get-point position-target gl-flare-x)
+    (up-send-flare gl-flare-x)
     (chat-local-to-self "ZULFIKAR: Standoff siege deployed! Fortifications under siege.")
 )
 
