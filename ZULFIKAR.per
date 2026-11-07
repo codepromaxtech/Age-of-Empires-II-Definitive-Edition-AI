@@ -219,9 +219,6 @@
 (defconst ri-fast-fire-ship 24)
 (defconst ri-heavy-demolition-ship 23)
 (defconst ri-elite-cannon-galleon 37)
-(defconst my-unique-unit-upgrade 0)
-(defconst my-unique-research 0)
-(defconst my-castle-unique-research 0)
 ; ============================================================
 ; SECTION 2: INITIALIZATION & STRATEGIC FOUNDATIONS
 ; Split into modular rules with <= 12 actions to comply with
@@ -846,8 +843,8 @@
 (defrule
     (current-age <= dark-age)
     (building-type-count-total mill >= 1)
-    (dropsite-min-distance live-boar > 35)
-    (dropsite-min-distance forage-bush > 25)
+    (dropsite-min-distance hunting > 35)
+    (dropsite-min-distance food > 25)
     (building-type-count-total farm < 2)
     (can-build farm)
 =>
@@ -1487,16 +1484,16 @@
 
 (defrule
     (current-age >= castle-age)
-    (can-research my-castle-unique-research)
+    (can-research my-unique-research)
 =>
-    (research my-castle-unique-research)
+    (research my-unique-research)
 )
 
 (defrule
     (current-age >= imperial-age)
-    (can-research my-unique-research)
+    (can-research my-second-unique-research)
 =>
-    (research my-unique-research)
+    (research my-second-unique-research)
 )
 ; ============================================================
 ; SECTION 11: CIVILIZATION-AWARE MILITARY COMPOSITIONS
@@ -2628,11 +2625,10 @@
     (train fishing-ship)
 )
 
-; On land maps with fish: build dock in Feudal
+; On hybrid maps: build dock in Feudal
 (defrule
-    (goal gl-map-style style-open)
+    (goal gl-map-style style-hybrid)
     (current-age >= feudal-age)
-    (resource-found fish)
     (building-type-count-total dock < 1)
     (can-build dock)
 =>
