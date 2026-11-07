@@ -224,69 +224,83 @@
 (defconst my-castle-unique-research 0)
 ; ============================================================
 ; SECTION 2: INITIALIZATION & STRATEGIC FOUNDATIONS
+; Split into modular rules with <= 12 actions to comply with
+; the AoE2 engine hard limit of 16 actions per defrule.
 ; ============================================================
 
+; --- Rule 1: Goals & Building Placement Setup ---
 (defrule
     (true)
 =>
-    ; Defaults: Open land map, medium size, balanced archetype
     (set-goal gl-map-style style-open)
     (set-goal gl-map-size size-medium)
     (set-goal gl-civ-archetype archetype-balanced)
     (set-goal gl-game-stage dark-age)
     (set-goal gl-attack-status 0)
-
-    ; Building placement defaults
     (set-strategic-number sn-enable-new-building-system 1)
     (set-strategic-number sn-percent-building-cancellation 10)
     (set-strategic-number sn-cap-civilian-builders 8)
     (set-strategic-number sn-percent-civilian-builders 25)
     (set-strategic-number sn-placement-zone-size 4)
     (set-strategic-number sn-placement-fail-delta 1)
+    (disable-self)
+)
+
+; --- Rule 2: Town Sizing & Dropsite Distances ---
+(defrule
+    (true)
+=>
     (set-strategic-number sn-minimum-town-size 12)
     (set-strategic-number sn-maximum-town-size 25)
     (set-strategic-number sn-safe-town-size 35)
-
-    ; Dropsite distancing
     (set-strategic-number sn-food-dropsite-distance 4)
     (set-strategic-number sn-wood-dropsite-distance 4)
     (set-strategic-number sn-gold-dropsite-distance 4)
     (set-strategic-number sn-stone-dropsite-distance 4)
     (set-strategic-number sn-dropsite-separation-distance 6)
     (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (disable-self)
+)
+
+; --- Rule 3: Camp Distances, Queuing & Scouting ---
+(defrule
+    (true)
+=>
     (set-strategic-number sn-camp-max-distance 20)
     (set-strategic-number sn-mill-max-distance 20)
     (set-strategic-number sn-lumber-camp-max-distance 25)
     (set-strategic-number sn-mining-camp-max-distance 25)
-
-    ; APM & queuing
     (set-strategic-number sn-enable-training-queue 2)
     (set-strategic-number sn-enable-research-queue 1)
-
-    ; Scouting
     (set-strategic-number sn-total-number-explorers 1)
     (set-strategic-number sn-number-explore-groups 1)
     (set-strategic-number sn-initial-exploration-required 0)
     (set-strategic-number sn-percent-exploration-required 40)
     (set-strategic-number sn-home-exploration-time 260)
+    (disable-self)
+)
 
-    ; Dark Age Gatherers: 65% Food, 35% Wood, 0% Gold, 0% Stone
+; --- Rule 4: Dark Age Economy, Boar Hunting & Repair ---
+(defrule
+    (true)
+=>
     (set-strategic-number sn-food-gatherer-percentage 65)
     (set-strategic-number sn-wood-gatherer-percentage 35)
     (set-strategic-number sn-gold-gatherer-percentage 0)
     (set-strategic-number sn-stone-gatherer-percentage 0)
     (set-strategic-number sn-percent-civilian-gatherers 100)
-
-    ; Boar hunting & livestock under TC
     (set-strategic-number sn-enable-boar-hunting 2)
     (set-strategic-number sn-minimum-boar-hunt-group-size 1)
     (set-strategic-number sn-minimum-number-hunters 6)
     (set-strategic-number sn-livestock-to-town-center 1)
-
-    ; Building repair
     (set-strategic-number sn-object-repair-level 32767)
+    (disable-self)
+)
 
-    ; Combat intelligence
+; --- Rule 5: Combat Intelligence, Timers & Greeting ---
+(defrule
+    (true)
+=>
     (set-strategic-number sn-enable-patrol-attack 1)
     (set-strategic-number sn-attack-intelligence 1)
     (set-strategic-number sn-gather-idle-soldiers-at-center 1)
@@ -297,11 +311,8 @@
     (set-strategic-number sn-building-targeting-mode 1)
     (set-strategic-number sn-wall-targeting-mode 1)
     (set-strategic-number sn-gate-type-for-wall 1)
-
-    ; Timers
     (enable-timer gl-wave-timer 60)
     (enable-timer gl-macro-timer 15)
-
     (chat-to-all "ZULFIKAR: gl hf! Adaptive Universal Engine active.")
     (disable-self)
 )
