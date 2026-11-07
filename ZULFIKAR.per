@@ -1993,6 +1993,27 @@
     (research ri-architecture)
 )
 
+(defrule
+    (current-age >= castle-age)
+    (can-research ri-treadmill-crane)
+=>
+    (research ri-treadmill-crane)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (can-research ri-arrowslits)
+=>
+    (research ri-arrowslits)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (can-research ri-heated-shot)
+=>
+    (research ri-heated-shot)
+)
+
 ; --- Wonder of the World (Standard Victory & Wonder Race) ---
 (defrule
     (current-age >= imperial-age)
@@ -2034,6 +2055,27 @@
     (can-research ri-block-printing)
 =>
     (research ri-block-printing)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (can-research ri-atonement)
+=>
+    (research ri-atonement)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-faith)
+=>
+    (research ri-faith)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-heresy)
+=>
+    (research ri-heresy)
 )
 
 ; Universal Unique Unit Training at Castle (all civs)
@@ -2086,6 +2128,30 @@
     (can-research my-second-unique-research)
 =>
     (research my-second-unique-research)
+)
+
+; Spies / Treason (Endgame Fog of War removal)
+(defrule
+    (current-age >= imperial-age)
+    (gold-amount >= 3000)
+    (can-research ri-spies)
+=>
+    (research ri-spies)
+    (chat-to-all "ZULFIKAR: Spies deployed! All enemy secrets revealed.")
+)
+
+(defrule
+    (current-age >= castle-age)
+    (can-research ri-gambesons)
+=>
+    (research ri-gambesons)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-parthian-tactics)
+=>
+    (research ri-parthian-tactics)
 )
 ; ============================================================
 ; SECTION 11: CIVILIZATION-AWARE MILITARY COMPOSITIONS
