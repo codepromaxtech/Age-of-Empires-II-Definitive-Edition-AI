@@ -135,6 +135,7 @@
 (defconst sn-free-siege-targeting 282)
 (defconst relic 285)
 (defconst monk-with-relic 802)
+(defconst dromon 1795)
 (defconst ri-cannon-galleon 36)
 
 ; --- Research Identifiers ---
@@ -3290,13 +3291,105 @@
     (train demolition-ship-line)
 )
 
+; --- NAVAL SIEGE WEAPONS: LONG-RANGE COASTAL ARTILLERY ---
+; Cannon Galleons (13-15 range) for standard civilizations
 (defrule
     (current-age >= imperial-age)
     (building-type-count-total dock >= 1)
-    (unit-type-count-total cannon-galleon-line < 4)
+    (unit-type-count-total cannon-galleon-line < 6)
     (can-train cannon-galleon-line)
 =>
     (train cannon-galleon-line)
+)
+
+; Dromons (Greek fire catapult siege ships for Romans, Byzantines, Huns, Goths)
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total dromon < 6)
+    (can-train dromon)
+=>
+    (train dromon)
+)
+
+; Demolition Ships (Naval Suicide Siege weapon vs packed enemy war fleets)
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total demolition-ship-line < 6)
+    (can-train demolition-ship-line)
+=>
+    (train demolition-ship-line)
+)
+
+; --- COHESIVE NAVAL BATTLE PLAN & COASTAL SIEGE ENGAGEMENT ---
+
+; 1. Feudal Shore Patrol & Harass
+(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (building-type-count-total dock >= 1)
+    (or (unit-type-count-total fire-ship-line >= 4)
+        (unit-type-count-total galley-line >= 5))
+=>
+    (set-strategic-number sn-number-boat-attack-groups 1)
+    (set-strategic-number sn-minimum-boat-attack-group-size 3)
+    (set-strategic-number sn-maximum-boat-attack-group-size 10)
+    (set-strategic-number sn-percent-attack-boats 75)
+    (set-strategic-number sn-target-evaluation-boat 100)
+    (attack-now)
+)
+
+; 2. Castle Age Fleet Dominance & Dock Raiding
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (building-type-count-total dock >= 1)
+    (or (unit-type-count-total fire-ship-line >= 8)
+        (unit-type-count-total galley-line >= 10))
+=>
+    (set-strategic-number sn-number-boat-attack-groups 2)
+    (set-strategic-number sn-minimum-boat-attack-group-size 6)
+    (set-strategic-number sn-maximum-boat-attack-group-size 22)
+    (set-strategic-number sn-percent-attack-boats 85)
+    (set-strategic-number sn-target-evaluation-boat 120)
+    (attack-now)
+)
+
+; 3. Imperial Coastal Siege Bombardment (Cannon Galleons / Dromons + Screen)
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
+    (or (unit-type-count-total cannon-galleon-line >= 2)
+        (or (unit-type-count-total dromon >= 2)
+            (or (unit-type-count-total fire-ship-line >= 10)
+                (unit-type-count-total galley-line >= 12))))
+=>
+    (set-strategic-number sn-number-boat-attack-groups 3)
+    (set-strategic-number sn-minimum-boat-attack-group-size 8)
+    (set-strategic-number sn-maximum-boat-attack-group-size 35)
+    (set-strategic-number sn-percent-attack-boats 100)
+    (set-strategic-number sn-target-evaluation-boat 150)
+    (set-strategic-number sn-target-evaluation-siege-weapon 500)
+    (attack-now)
+    (chat-local-to-self "ZULFIKAR: Naval siege fleet advancing! Coastal bombardment initiated.")
+)
+
+; 4. Defensive Fleet Scramble: Intercept enemy warships threatening our shoreline
+(defrule
+    (town-under-attack)
+    (building-type-count-total dock >= 1)
+    (players-unit-type-count any-enemy galley-line >= 1)
+    (or (unit-type-count-total fire-ship-line >= 2)
+        (unit-type-count-total galley-line >= 2))
+=>
+    (set-strategic-number sn-number-boat-attack-groups 2)
+    (set-strategic-number sn-minimum-boat-attack-group-size 2)
+    (set-strategic-number sn-maximum-boat-attack-group-size 25)
+    (set-strategic-number sn-percent-attack-boats 100)
+    (set-strategic-number sn-target-evaluation-boat 200)
+    (attack-now)
+    (chat-local-to-self "ZULFIKAR: Shoreline contested! Fleet scrambling to intercept enemy warships.")
 )
 
 ; Transport Ships for ground invasion on water/islands
