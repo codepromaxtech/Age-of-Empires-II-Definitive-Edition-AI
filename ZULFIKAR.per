@@ -272,10 +272,10 @@
     (set-strategic-number sn-wood-dropsite-distance 4)
     (set-strategic-number sn-gold-dropsite-distance 4)
     (set-strategic-number sn-stone-dropsite-distance 4)
-    (set-strategic-number sn-dropsite-separation-distance 10)
+    (set-strategic-number sn-dropsite-separation-distance 6)
     (set-strategic-number sn-allow-adjacent-dropsites 0)
     (set-strategic-number sn-preferred-mill-placement 0)
-    (set-strategic-number sn-minimum-dropsite-buffer 20)
+    (set-strategic-number sn-minimum-dropsite-buffer 5)
     (disable-self)
 )
 
@@ -283,10 +283,10 @@
 (defrule
     (true)
 =>
-    (set-strategic-number sn-camp-max-distance 20)
-    (set-strategic-number sn-mill-max-distance 20)
-    (set-strategic-number sn-lumber-camp-max-distance 25)
-    (set-strategic-number sn-mining-camp-max-distance 25)
+    (set-strategic-number sn-camp-max-distance 35)
+    (set-strategic-number sn-mill-max-distance 25)
+    (set-strategic-number sn-lumber-camp-max-distance 35)
+    (set-strategic-number sn-mining-camp-max-distance 38)
     (set-strategic-number sn-enable-training-queue 2)
     (set-strategic-number sn-enable-research-queue 1)
     (set-strategic-number sn-total-number-explorers 1)
@@ -636,14 +636,27 @@
     (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
+; Transition to Feudal: Send 3-4 villagers to gold to bank for Feudal upgrades & military
 (defrule
     (current-age <= dark-age)
     (food-amount >= 480)
 =>
     (set-strategic-number sn-food-gatherer-percentage 50)
-    (set-strategic-number sn-wood-gatherer-percentage 50)
-    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-wood-gatherer-percentage 36)
+    (set-strategic-number sn-gold-gatherer-percentage 14)
     (set-strategic-number sn-stone-gatherer-percentage 0)
+)
+
+; Build Mining Camp #1 (Gold) during Feudal transit
+(defrule
+    (current-age <= dark-age)
+    (food-amount >= 480)
+    (building-type-count-total mining-camp < 1)
+    (can-build mining-camp)
+=>
+    (set-strategic-number sn-camp-max-distance 35)
+    (set-strategic-number sn-mining-camp-max-distance 38)
+    (build mining-camp)
 )
 
 ; ------------------------------------------------------------
@@ -656,10 +669,10 @@
     (food-amount >= 150)
     (wood-amount <= 400)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 45)
-    (set-strategic-number sn-wood-gatherer-percentage 38)
-    (set-strategic-number sn-gold-gatherer-percentage 17)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-food-gatherer-percentage 42)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 16)
+    (set-strategic-number sn-stone-gatherer-percentage 12)
 )
 
 (defrule
@@ -667,10 +680,10 @@
     (current-age < castle-age)
     (wood-amount < 100)
 =>
-    (set-strategic-number sn-wood-gatherer-percentage 55)
-    (set-strategic-number sn-food-gatherer-percentage 32)
-    (set-strategic-number sn-gold-gatherer-percentage 13)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-wood-gatherer-percentage 46)
+    (set-strategic-number sn-food-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 14)
+    (set-strategic-number sn-stone-gatherer-percentage 10)
 )
 
 (defrule
@@ -679,24 +692,23 @@
     (food-amount < 150)
     (wood-amount >= 100)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 56)
-    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-food-gatherer-percentage 48)
+    (set-strategic-number sn-wood-gatherer-percentage 26)
     (set-strategic-number sn-gold-gatherer-percentage 14)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 12)
 )
 
 (defrule
     (current-age >= feudal-age)
     (current-age < castle-age)
     (wood-amount >= 200)
-    (building-type-count-total blacksmith >= 1)
     (or (food-amount < 800)
         (gold-amount < 200))
 =>
-    (set-strategic-number sn-food-gatherer-percentage 55)
-    (set-strategic-number sn-gold-gatherer-percentage 25)
-    (set-strategic-number sn-wood-gatherer-percentage 20)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-food-gatherer-percentage 46)
+    (set-strategic-number sn-gold-gatherer-percentage 24)
+    (set-strategic-number sn-wood-gatherer-percentage 18)
+    (set-strategic-number sn-stone-gatherer-percentage 12)
 )
 
 (defrule
@@ -704,24 +716,22 @@
     (current-age < castle-age)
     (wood-amount > 400)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 60)
-    (set-strategic-number sn-wood-gatherer-percentage 22)
-    (set-strategic-number sn-gold-gatherer-percentage 18)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-food-gatherer-percentage 48)
+    (set-strategic-number sn-wood-gatherer-percentage 18)
+    (set-strategic-number sn-gold-gatherer-percentage 20)
+    (set-strategic-number sn-stone-gatherer-percentage 14)
 )
 
-; Feudal Stone Mining: Allocate stone gatherers once mining camp or blacksmith is established
+; Stone Cap Satisfaction: If 650 stone already banked in Feudal, shift stone gatherers to gold & food
 (defrule
     (current-age >= feudal-age)
     (current-age < castle-age)
-    (or (building-type-count-total mining-camp >= 2)
-        (building-type-count-total blacksmith >= 1))
-    (stone-amount < 650)
+    (stone-amount >= 650)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 42)
-    (set-strategic-number sn-wood-gatherer-percentage 28)
-    (set-strategic-number sn-gold-gatherer-percentage 15)
-    (set-strategic-number sn-stone-gatherer-percentage 15)
+    (set-strategic-number sn-food-gatherer-percentage 48)
+    (set-strategic-number sn-wood-gatherer-percentage 26)
+    (set-strategic-number sn-gold-gatherer-percentage 26)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
 ; ------------------------------------------------------------
@@ -1173,8 +1183,10 @@
     (current-age == feudal-age)
 =>
     (set-strategic-number sn-minimum-town-size 14)
-    (set-strategic-number sn-maximum-town-size 22)
+    (set-strategic-number sn-maximum-town-size 24)
     (set-strategic-number sn-placement-zone-size 3)
+    (set-strategic-number sn-camp-max-distance 38)
+    (set-strategic-number sn-mining-camp-max-distance 42)
     (disable-self)
 )
 
@@ -1191,9 +1203,10 @@
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total mining-camp < 1)
-    (resource-found gold)
     (can-build mining-camp)
 =>
+    (set-strategic-number sn-camp-max-distance 38)
+    (set-strategic-number sn-mining-camp-max-distance 42)
     (build mining-camp)
 )
 
@@ -1201,10 +1214,10 @@
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total mining-camp < 2)
-    (resource-found stone)
-    (building-type-count-total blacksmith >= 1)
     (can-build mining-camp)
 =>
+    (set-strategic-number sn-camp-max-distance 42)
+    (set-strategic-number sn-mining-camp-max-distance 46)
     (build mining-camp)
 )
 
@@ -1233,7 +1246,7 @@
     (current-age >= castle-age)
     (building-type-count-total mining-camp < 6)
     (dropsite-min-distance gold > 4)
-    (dropsite-min-distance gold < 35)
+    (dropsite-min-distance gold < 100)
     (can-build mining-camp)
 =>
     (build mining-camp)
@@ -1245,7 +1258,7 @@
     (current-age >= castle-age)
     (building-type-count-total mining-camp < 6)
     (dropsite-min-distance stone > 4)
-    (dropsite-min-distance stone < 35)
+    (dropsite-min-distance stone < 100)
     (can-build mining-camp)
 =>
     (build mining-camp)
@@ -1302,6 +1315,8 @@
 (defrule
     (current-age >= feudal-age)
     (current-age < castle-age)
+    (or (building-type-count-total mining-camp >= 2)
+        (wood-amount >= 170))
     (wood-amount >= 80)
     (building-type-count-total farm < 18)
     (can-build farm)
@@ -1436,9 +1451,10 @@
 (defrule
     (current-age >= castle-age)
     (building-type-count-total mining-camp < 2)
-    (resource-found stone)
     (can-build mining-camp)
 =>
+    (set-strategic-number sn-camp-max-distance 50)
+    (set-strategic-number sn-mining-camp-max-distance 55)
     (build mining-camp)
 )
 
@@ -1457,9 +1473,11 @@
     (current-age == castle-age)
 =>
     (set-strategic-number sn-minimum-town-size 20)
-    (set-strategic-number sn-maximum-town-size 32)
+    (set-strategic-number sn-maximum-town-size 35)
     (set-strategic-number sn-placement-zone-size 4)
     (set-strategic-number sn-total-number-explorers 2)
+    (set-strategic-number sn-camp-max-distance 50)
+    (set-strategic-number sn-mining-camp-max-distance 55)
     (set-strategic-number sn-relic-return-distance 500)
     (disable-self)
 )
