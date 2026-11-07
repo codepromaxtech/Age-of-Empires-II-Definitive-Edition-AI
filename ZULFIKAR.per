@@ -125,9 +125,14 @@
 (defconst sn-relic-return-distance 216)
 (defconst sn-coop-share-information 309)
 (defconst sn-coop-share-attacking 308)
-(defconst sn-do-not-scale-for-difficulty-level 124)
 (defconst sn-easiest-reaction-percentage 138)
 (defconst sn-easier-reaction-percentage 139)
+(defconst sn-placement-to-center 270)
+(defconst sn-disable-builder-assistance 285)
+(defconst sn-preferred-mill-placement 253)
+(defconst sn-minimum-dropsite-buffer 271)
+(defconst sn-dock-placement-mode 278)
+(defconst ri-cannon-galleon 36)
 
 ; --- Research Identifiers ---
 (defconst ri-loom 22)
@@ -239,24 +244,27 @@
     (set-strategic-number sn-percent-building-cancellation 10)
     (set-strategic-number sn-cap-civilian-builders 8)
     (set-strategic-number sn-percent-civilian-builders 25)
-    (set-strategic-number sn-placement-zone-size 4)
+    (set-strategic-number sn-placement-zone-size 3)
     (set-strategic-number sn-placement-fail-delta 1)
+    (set-strategic-number sn-placement-to-center 1)
     (disable-self)
 )
 
-; --- Rule 2: Town Sizing & Dropsite Distances ---
+; --- Rule 2: Town Sizing, Dropsites, Buffer & Aesthetics ---
 (defrule
     (true)
 =>
-    (set-strategic-number sn-minimum-town-size 12)
-    (set-strategic-number sn-maximum-town-size 25)
-    (set-strategic-number sn-safe-town-size 35)
+    (set-strategic-number sn-minimum-town-size 10)
+    (set-strategic-number sn-maximum-town-size 16)
+    (set-strategic-number sn-safe-town-size 25)
     (set-strategic-number sn-food-dropsite-distance 4)
     (set-strategic-number sn-wood-dropsite-distance 4)
     (set-strategic-number sn-gold-dropsite-distance 4)
     (set-strategic-number sn-stone-dropsite-distance 4)
-    (set-strategic-number sn-dropsite-separation-distance 6)
-    (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (set-strategic-number sn-dropsite-separation-distance 10)
+    (set-strategic-number sn-allow-adjacent-dropsites 0)
+    (set-strategic-number sn-preferred-mill-placement 0)
+    (set-strategic-number sn-minimum-dropsite-buffer 20)
     (disable-self)
 )
 
@@ -298,7 +306,7 @@
     (disable-self)
 )
 
-; --- Rule 5: Combat Intelligence, Timers & Greeting ---
+; --- Rule 5: Combat & Strategic Cooperation Intelligence ---
 (defrule
     (true)
 =>
@@ -310,8 +318,18 @@
     (set-strategic-number sn-coop-share-information 1)
     (set-strategic-number sn-coop-share-attacking 1)
     (set-strategic-number sn-building-targeting-mode 1)
+    (disable-self)
+)
+
+; --- Rule 6: Walls, Gates, Relics, Timers & Engine Greeting ---
+(defrule
+    (true)
+=>
     (set-strategic-number sn-wall-targeting-mode 1)
     (set-strategic-number sn-gate-type-for-wall 1)
+    (set-strategic-number sn-disable-builder-assistance 0)
+    (set-strategic-number sn-relic-return-distance 500)
+    (enable-wall-placement 2)
     (enable-timer gl-wave-timer 60)
     (enable-timer gl-macro-timer 15)
     (chat-to-all "ZULFIKAR: gl hf! Adaptive Universal Engine active.")
@@ -661,21 +679,23 @@
     (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
+; Feudal Stone Mining: Allocate stone gatherers once mining camp or blacksmith is established
+(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (or (building-type-count-total mining-camp >= 2)
+        (building-type-count-total blacksmith >= 1))
+    (stone-amount < 650)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 42)
+    (set-strategic-number sn-wood-gatherer-percentage 28)
+    (set-strategic-number sn-gold-gatherer-percentage 15)
+    (set-strategic-number sn-stone-gatherer-percentage 15)
+)
+
 ; ------------------------------------------------------------
 ; 3. CASTLE AGE MANPOWER (Boom, Stone Rush & Military Macro)
 ; ------------------------------------------------------------
-(defrule
-    (current-age >= castle-age)
-    (current-age < imperial-age)
-    (building-type-count-total castle < 1)
-    (stone-amount < 650)
-=>
-    (set-strategic-number sn-stone-gatherer-percentage 20)
-    (set-strategic-number sn-food-gatherer-percentage 36)
-    (set-strategic-number sn-wood-gatherer-percentage 26)
-    (set-strategic-number sn-gold-gatherer-percentage 18)
-)
-
 (defrule
     (current-age >= castle-age)
     (current-age < imperial-age)
@@ -752,6 +772,19 @@
     (set-strategic-number sn-stone-gatherer-percentage 6)
 )
 
+; Priority Stone Gathering for Citadels: Overrides generic distributions until Castles secured!
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (building-type-count-total castle < 2)
+    (stone-amount < 650)
+=>
+    (set-strategic-number sn-stone-gatherer-percentage 22)
+    (set-strategic-number sn-food-gatherer-percentage 36)
+    (set-strategic-number sn-wood-gatherer-percentage 24)
+    (set-strategic-number sn-gold-gatherer-percentage 18)
+)
+
 ; ------------------------------------------------------------
 ; 4. IMPERIAL AGE MANPOWER (Deathball, Trash War & Infinite Trade)
 ; ------------------------------------------------------------
@@ -798,10 +831,22 @@
     (set-strategic-number sn-stone-gatherer-percentage 6)
 )
 
+; Imperial Citadel Stone Gathering: Sustained stone for forward Castles & Bombard Towers
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total castle < 4)
+    (stone-amount < 650)
+=>
+    (set-strategic-number sn-stone-gatherer-percentage 15)
+    (set-strategic-number sn-food-gatherer-percentage 35)
+    (set-strategic-number sn-wood-gatherer-percentage 28)
+    (set-strategic-number sn-gold-gatherer-percentage 22)
+)
+
 ; ------------------------------------------------------------
 ; 5. MEGA-BANK & DEATH MATCH (20K+ Resources / Flooded Economy)
-; When resources exceed 4000 or in Death Match mode, all gathering stops
-; and 100% of villagers become dedicated builders to spam infrastructure!
+; When resources exceed 4000 or in Death Match mode, villagers focus on
+; rapid building while retaining balanced economic collection.
 ; ------------------------------------------------------------
 (defrule
     (or (death-match-game)
@@ -812,13 +857,13 @@
     (set-strategic-number sn-cap-civilian-explorers 0)
     (set-strategic-number sn-minimum-civilian-explorers 0)
     (set-strategic-number sn-total-number-explorers 0)
-    (set-strategic-number sn-percent-civilian-builders 100)
-    (set-strategic-number sn-cap-civilian-builders 200)
-    (set-strategic-number sn-percent-civilian-gatherers 0)
-    (set-strategic-number sn-wood-gatherer-percentage 0)
-    (set-strategic-number sn-food-gatherer-percentage 0)
-    (set-strategic-number sn-gold-gatherer-percentage 0)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-percent-civilian-builders 60)
+    (set-strategic-number sn-cap-civilian-builders 100)
+    (set-strategic-number sn-percent-civilian-gatherers 40)
+    (set-strategic-number sn-wood-gatherer-percentage 25)
+    (set-strategic-number sn-food-gatherer-percentage 25)
+    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-stone-gatherer-percentage 25)
     (set-strategic-number sn-maximum-town-size 45)
     (set-strategic-number sn-safe-town-size 50)
 )
@@ -835,62 +880,111 @@
 )
 
 ; ------------------------------------------------------------
-; 5. DYNAMIC MARKET BALANCING (Human-Like Resource Trading)
+; 6. DYNAMIC MARKET BALANCING (Human-Like Resource Trading)
 ; ------------------------------------------------------------
+
+; Feudal -> Castle Age push: Click up ASAP
 (defrule
     (current-age == feudal-age)
-    (food-amount >= 850)
-    (gold-amount < 200)
-    (can-sell-commodity food)
-=>
-    (sell-commodity food)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (wood-amount > 1200)
-    (gold-amount < 300)
-    (can-sell-commodity wood)
-=>
-    (sell-commodity wood)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (food-amount > 1400)
-    (gold-amount < 300)
-    (can-sell-commodity food)
-=>
-    (sell-commodity food)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total castle >= 2)
-    (stone-amount > 800)
-    (gold-amount < 400)
-    (can-sell-commodity stone)
-=>
-    (sell-commodity stone)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (gold-amount > 1000)
-    (food-amount < 150)
+    (food-amount < 800)
+    (food-amount >= 600)
+    (gold-amount > 300)
     (can-buy-commodity food)
 =>
     (buy-commodity food)
 )
 
 (defrule
+    (current-age == feudal-age)
+    (food-amount < 800)
+    (wood-amount > 400)
+    (gold-amount < 200)
+    (can-sell-commodity wood)
+=>
+    (sell-commodity wood)
+)
+
+; Castle -> Imperial Age push: Click up ASAP
+(defrule
+    (current-age == castle-age)
+    (food-amount < 1000)
+    (food-amount >= 750)
+    (gold-amount > 900)
+    (can-buy-commodity food)
+=>
+    (buy-commodity food)
+)
+
+(defrule
+    (current-age == castle-age)
+    (gold-amount < 800)
+    (wood-amount > 650)
+    (can-sell-commodity wood)
+=>
+    (sell-commodity wood)
+)
+
+; Citadel Emergency Stone Purchase: Guarantee Castle construction!
+(defrule
     (current-age >= castle-age)
-    (gold-amount > 1000)
+    (building-type-count-total castle < 1)
+    (stone-amount >= 350)
+    (stone-amount < 650)
+    (gold-amount > 300)
+    (can-buy-commodity stone)
+=>
+    (buy-commodity stone)
+)
+
+; Surplus Liquidation: Sell excess wood/food for gold
+(defrule
+    (current-age >= feudal-age)
+    (wood-amount > 800)
+    (gold-amount < 250)
+    (can-sell-commodity wood)
+=>
+    (sell-commodity wood)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (food-amount > 800)
+    (gold-amount < 250)
+    (can-sell-commodity food)
+=>
+    (sell-commodity food)
+)
+
+; Starvation Rescue: Buy food/wood if desperately starved
+(defrule
+    (current-age >= feudal-age)
+    (food-amount < 100)
+    (gold-amount > 350)
+    (can-buy-commodity food)
+=>
+    (buy-commodity food)
+)
+
+(defrule
+    (current-age >= feudal-age)
     (wood-amount < 100)
+    (gold-amount > 350)
     (can-buy-commodity wood)
 =>
     (buy-commodity wood)
 )
+
+; Surplus Stone Sale: Sell stone when fortress network complete
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle >= 2)
+    (stone-amount > 700)
+    (gold-amount < 300)
+    (can-sell-commodity stone)
+=>
+    (sell-commodity stone)
+)
+
 ; ============================================================
 ; SECTION 7: DARK AGE HUMAN BUILD ORDER (The 21-Pop Standard)
 ; ============================================================
@@ -1043,6 +1137,16 @@
     (research ri-wheel-barrow)
 )
 
+; Feudal Town Sizing & Compact Urban Growth
+(defrule
+    (current-age == feudal-age)
+=>
+    (set-strategic-number sn-minimum-town-size 14)
+    (set-strategic-number sn-maximum-town-size 22)
+    (set-strategic-number sn-placement-zone-size 3)
+    (disable-self)
+)
+
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total lumber-camp < 2)
@@ -1052,6 +1156,7 @@
     (build lumber-camp)
 )
 
+; Gold Mining Camp
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total mining-camp < 1)
@@ -1059,6 +1164,25 @@
     (can-build mining-camp)
 =>
     (build mining-camp)
+)
+
+; Stone Mining Camp (Begins early stone accumulation for Citadel & Walls)
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total mining-camp < 2)
+    (resource-found stone)
+    (building-type-count-total blacksmith >= 1)
+    (can-build mining-camp)
+=>
+    (build mining-camp)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total mining-camp >= 2)
+    (can-research ri-stone-mining)
+=>
+    (research ri-stone-mining)
 )
 
 ; Universal Infrastructure: 1 Barracks (prerequisite for Stables & Ranges across all maps)
@@ -1097,20 +1221,27 @@
     (build farm)
 )
 
-; On Open Maps: Build palisade walls to woodlines & defensive tower if attacked
+; Feudal Perimeter Palisade Walls & Multi-Gate Perimeter
 (defrule
-    (goal gl-map-style style-open)
     (current-age >= feudal-age)
     (current-age < castle-age)
-    (wood-amount >= 140)
+    (wood-amount >= 40)
+    (wall-completed-percentage 2 < 100)
     (can-build-wall 2 palisade-wall)
 =>
-    (enable-wall-placement 2)
     (build-wall 2 palisade-wall)
 )
 
 (defrule
-    (goal gl-map-style style-open)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (building-type-count-total gate < 4)
+    (can-build-gate 2)
+=>
+    (build-gate 2)
+)
+
+(defrule
     (current-age >= feudal-age)
     (town-under-attack)
     (building-type-count-total watch-tower < 2)
@@ -1233,6 +1364,18 @@
     (build farm)
 )
 
+; Castle Town Sizing & Active Map Scouting
+(defrule
+    (current-age == castle-age)
+=>
+    (set-strategic-number sn-minimum-town-size 20)
+    (set-strategic-number sn-maximum-town-size 32)
+    (set-strategic-number sn-placement-zone-size 4)
+    (set-strategic-number sn-total-number-explorers 2)
+    (set-strategic-number sn-relic-return-distance 500)
+    (disable-self)
+)
+
 ; Castles: 1st Citadel at 650 stone, 2nd expansion castle
 (defrule
     (current-age >= castle-age)
@@ -1246,32 +1389,26 @@
 (defrule
     (current-age >= castle-age)
     (building-type-count-total castle < 2)
-    (stone-amount >= 650)
     (can-build castle)
 =>
     (build castle)
     (chat-to-all "ZULFIKAR: Fortress expanding. Second Castle founded.")
 )
 
-; Stone Walls with 3-4 Stone Gates (multi-gate perimeter, no bottleneck!)
+; Stone Walls & Stone Gates (Continuous perimeter reinforcement)
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total castle >= 1)
-    (stone-amount >= 150)
+    (wall-completed-percentage 2 < 100)
     (can-build-wall 2 stone-wall-line)
 =>
-    (set-strategic-number sn-gate-type-for-wall 1)
-    (enable-wall-placement 2)
     (build-wall 2 stone-wall-line)
 )
 
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total gate < 4)
-    (stone-amount >= 100)
+    (building-type-count-total gate < 6)
     (can-build-gate 2)
 =>
-    (set-strategic-number sn-gate-type-for-wall 1)
     (build-gate 2)
 )
 
@@ -1339,11 +1476,13 @@
     (train monk)
 )
 
+; Active Scouting for Relics & Map Awareness
 (defrule
     (current-age >= castle-age)
+    (unit-type-count-total scout-cavalry-line < 1)
+    (can-train scout-cavalry-line)
 =>
-    (set-strategic-number sn-relic-return-distance 200)
-    (disable-self)
+    (train scout-cavalry-line)
 )
 
 (defrule
@@ -1402,6 +1541,16 @@
 ; ============================================================
 ; SECTION 10: IMPERIAL AGE DOMINANCE & UNIQUE UNITS
 ; ============================================================
+
+; Imperial Town Sizing & Macro Expansion
+(defrule
+    (current-age == imperial-age)
+=>
+    (set-strategic-number sn-minimum-town-size 28)
+    (set-strategic-number sn-maximum-town-size 45)
+    (set-strategic-number sn-placement-zone-size 5)
+    (disable-self)
+)
 
 (defrule
     (current-age >= imperial-age)
@@ -1558,25 +1707,20 @@
     (build siege-workshop)
 )
 
-; Mega-Bank / Death Match: Perimeter Stone Walls & Gates
+; Imperial Perimeter Stone Walls & Multi-Gate Network
 (defrule
     (current-age >= imperial-age)
-    (or (death-match-game)
-        (stone-amount >= 1000))
+    (wall-completed-percentage 2 < 100)
     (can-build-wall 2 stone-wall-line)
 =>
-    (enable-wall-placement 2)
     (build-wall 2 stone-wall-line)
 )
 
 (defrule
     (current-age >= imperial-age)
-    (or (death-match-game)
-        (stone-amount >= 1000))
-    (building-type-count-total gate < 6)
+    (building-type-count-total gate < 8)
     (can-build-gate 2)
 =>
-    (set-strategic-number sn-gate-type-for-wall 1)
     (build-gate 2)
 )
 
@@ -2770,45 +2914,10 @@
     (research ri-banking)
 )
 
-; Market balancing
 (defrule
-    (wood-amount > 1400)
-    (gold-amount < 300)
-    (commodity-selling-price wood > 25)
-    (can-sell-commodity wood)
+    (can-research ri-guilds)
 =>
-    (sell-commodity wood)
-)
-
-(defrule
-    (food-amount > 1400)
-    (gold-amount < 300)
-    (commodity-selling-price food > 25)
-    (can-sell-commodity food)
-=>
-    (sell-commodity food)
-)
-
-; Emergency stone for Citadel
-(defrule
-    (current-age >= castle-age)
-    (stone-amount >= 550)
-    (stone-amount < 650)
-    (gold-amount > 400)
-    (building-type-count-total castle < 1)
-    (can-buy-commodity stone)
-=>
-    (buy-commodity stone)
-    (chat-local-to-self "ZULFIKAR: Procured stone for Citadel completion.")
-)
-
-; Emergency food purchase
-(defrule
-    (food-amount < 50)
-    (gold-amount > 350)
-    (can-buy-commodity food)
-=>
-    (buy-commodity food)
+    (research ri-guilds)
 )
 
 ; Ally tributes
@@ -2871,40 +2980,34 @@
     (train scout-cavalry-line)
 )
 ; ============================================================
-; SECTION 16: WATER / ISLAND MAP NAVAL DOMINANCE
+; ============================================================
+; SECTION 16: UNIVERSAL NAVY & WATER DOMINANCE
 ; ============================================================
 
-; On Water maps: Dark Age Dock & Fishing Ships
+; Universal Dock 1: Founded on ANY map where shoreline is accessible
 (defrule
-    (goal gl-map-style style-water)
-    (current-age <= dark-age)
     (building-type-count-total dock < 1)
     (can-build dock)
 =>
     (build dock)
+    (chat-local-to-self "ZULFIKAR: Waterway discovered! Dock founded.")
 )
 
+; Booming Fishery: Train fishing ships as soon as dock is founded
 (defrule
     (building-type-count-total dock >= 1)
-    (unit-type-count-total fishing-ship < 6)
+    (unit-type-count-total fishing-ship < 8)
     (can-train fishing-ship)
 =>
     (train fishing-ship)
 )
 
-; On hybrid maps: build dock in Feudal
+; Expansion Docks: Scale on water maps or when wood is plentiful
 (defrule
-    (goal gl-map-style style-hybrid)
     (current-age >= feudal-age)
-    (building-type-count-total dock < 1)
-    (can-build dock)
-=>
-    (build dock)
-)
-
-(defrule
-    (goal gl-map-style style-water)
-    (current-age >= feudal-age)
+    (or (goal gl-map-style style-water)
+    (or (goal gl-map-style style-hybrid)
+        (wood-amount > 350)))
     (building-type-count-total dock < 2)
     (can-build dock)
 =>
@@ -2912,55 +3015,82 @@
 )
 
 (defrule
-    (goal gl-map-style style-water)
     (current-age >= castle-age)
-    (building-type-count-total dock < 3)
+    (or (goal gl-map-style style-water)
+    (or (goal gl-map-style style-hybrid)
+        (wood-amount > 500)))
+    (building-type-count-total dock < 4)
     (can-build dock)
 =>
     (build dock)
 )
 
-; Feudal Warships
+; Feudal Warships: Fire galleys, galleys, demolition rafts
 (defrule
-    (goal gl-map-style style-water)
     (current-age >= feudal-age)
     (building-type-count-total dock >= 1)
-    (unit-type-count-total fire-ship-line < 4)
+    (unit-type-count-total fire-ship-line < 6)
     (can-train fire-ship-line)
 =>
     (train fire-ship-line)
 )
 
 (defrule
-    (goal gl-map-style style-water)
     (current-age >= feudal-age)
     (building-type-count-total dock >= 1)
-    (unit-type-count-total galley-line < 4)
-    (can-train galley-line)
-=>
-    (train galley-line)
-)
-
-; Castle / Imperial Warships
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total dock >= 1)
-    (unit-type-count-total galley-line < 10)
+    (unit-type-count-total galley-line < 6)
     (can-train galley-line)
 =>
     (train galley-line)
 )
 
 (defrule
+    (current-age >= feudal-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total demolition-ship-line < 3)
+    (can-train demolition-ship-line)
+=>
+    (train demolition-ship-line)
+)
+
+; Castle & Imperial Warships: Heavy fleet composition
+(defrule
     (current-age >= castle-age)
     (building-type-count-total dock >= 1)
-    (unit-type-count-total fire-ship-line < 8)
+    (unit-type-count-total fire-ship-line < 12)
     (can-train fire-ship-line)
 =>
     (train fire-ship-line)
 )
 
-; Transport Ships for ground invasion
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total galley-line < 15)
+    (can-train galley-line)
+=>
+    (train galley-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total demolition-ship-line < 5)
+    (can-train demolition-ship-line)
+=>
+    (train demolition-ship-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total cannon-galleon-line < 4)
+    (can-train cannon-galleon-line)
+=>
+    (train cannon-galleon-line)
+)
+
+; Transport Ships for ground invasion on water/islands
 (defrule
     (goal gl-map-style style-water)
     (current-age >= castle-age)
@@ -2973,10 +3103,9 @@
 
 ; Water Trade Cogs for Allied Naval Trade
 (defrule
-    (goal gl-map-style style-water)
     (player-in-game any-ally)
     (building-type-count-total dock >= 1)
-    (unit-type-count-total trade-cog < 20)
+    (unit-type-count-total trade-cog < 15)
     (can-train trade-cog)
 =>
     (train trade-cog)
@@ -2999,6 +3128,24 @@
     (can-research ri-fast-fire-ship)
 =>
     (research ri-fast-fire-ship)
+)
+
+(defrule
+    (can-research ri-heavy-demolition-ship)
+=>
+    (research ri-heavy-demolition-ship)
+)
+
+(defrule
+    (can-research ri-cannon-galleon)
+=>
+    (research ri-cannon-galleon)
+)
+
+(defrule
+    (can-research ri-elite-cannon-galleon)
+=>
+    (research ri-elite-cannon-galleon)
 )
 
 (defrule
