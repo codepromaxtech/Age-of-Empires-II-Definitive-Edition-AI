@@ -515,14 +515,18 @@
     (disable-self)
 )
 ; ============================================================
-; SECTION 6: DYNAMIC REAL-TIME MACRO (Resource Feedback Loop)
+; SECTION 6: DYNAMIC REAL-TIME MACRO & MANPOWER ALLOCATION
 ; Continuously monitors resource inventory and reallocates gatherers
-; dynamically like a human player to eliminate floating resources.
+; dynamically like a high-ELO human player to eliminate shortages
+; and floating resources.
 ; ============================================================
 
-; --- Dark Age Baseline: 65% Food, 35% Wood, 0% Gold, 0% Stone ---
+; ------------------------------------------------------------
+; 1. DARK AGE MANPOWER (Opening Economy)
+; ------------------------------------------------------------
 (defrule
     (current-age <= dark-age)
+    (food-amount < 480)
 =>
     (set-strategic-number sn-food-gatherer-percentage 65)
     (set-strategic-number sn-wood-gatherer-percentage 35)
@@ -530,10 +534,25 @@
     (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
-; --- Feudal Baseline: 45% Food, 38% Wood, 17% Gold, 0% Stone ---
+(defrule
+    (current-age <= dark-age)
+    (food-amount >= 480)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 50)
+    (set-strategic-number sn-wood-gatherer-percentage 50)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+)
+
+; ------------------------------------------------------------
+; 2. FEUDAL AGE MANPOWER (Dynamic Priority Allocation)
+; ------------------------------------------------------------
 (defrule
     (current-age >= feudal-age)
     (current-age < castle-age)
+    (wood-amount >= 100)
+    (food-amount >= 150)
+    (wood-amount <= 400)
 =>
     (set-strategic-number sn-food-gatherer-percentage 45)
     (set-strategic-number sn-wood-gatherer-percentage 38)
@@ -541,69 +560,247 @@
     (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
-; --- Castle Age Baseline: 40% Food, 30% Wood, 20% Gold, 10% Stone ---
+(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (wood-amount < 100)
+=>
+    (set-strategic-number sn-wood-gatherer-percentage 55)
+    (set-strategic-number sn-food-gatherer-percentage 32)
+    (set-strategic-number sn-gold-gatherer-percentage 13)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (food-amount < 150)
+    (wood-amount >= 100)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 56)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 14)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (wood-amount >= 200)
+    (building-type-count-total blacksmith >= 1)
+    (or (food-amount < 800)
+        (gold-amount < 200))
+=>
+    (set-strategic-number sn-food-gatherer-percentage 55)
+    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-wood-gatherer-percentage 20)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (wood-amount > 400)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 60)
+    (set-strategic-number sn-wood-gatherer-percentage 22)
+    (set-strategic-number sn-gold-gatherer-percentage 18)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+)
+
+; ------------------------------------------------------------
+; 3. CASTLE AGE MANPOWER (Boom, Stone Rush & Military Macro)
+; ------------------------------------------------------------
 (defrule
     (current-age >= castle-age)
     (current-age < imperial-age)
-    (building-type-count-total castle >= 1)
-=>
-    (set-strategic-number sn-food-gatherer-percentage 40)
-    (set-strategic-number sn-wood-gatherer-percentage 30)
-    (set-strategic-number sn-gold-gatherer-percentage 22)
-    (set-strategic-number sn-stone-gatherer-percentage 8)
-)
-
-; --- Castle Age Stone Surge: Allocate 18% Stone until 1st Castle is built ---
-(defrule
-    (current-age >= castle-age)
     (building-type-count-total castle < 1)
     (stone-amount < 650)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 35)
-    (set-strategic-number sn-wood-gatherer-percentage 27)
-    (set-strategic-number sn-gold-gatherer-percentage 20)
-    (set-strategic-number sn-stone-gatherer-percentage 18)
+    (set-strategic-number sn-stone-gatherer-percentage 20)
+    (set-strategic-number sn-food-gatherer-percentage 36)
+    (set-strategic-number sn-wood-gatherer-percentage 26)
+    (set-strategic-number sn-gold-gatherer-percentage 18)
 )
 
-; --- Imperial Age Baseline: 35% Food, 30% Wood, 25% Gold, 10% Stone ---
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (or (building-type-count-total castle >= 1)
+        (stone-amount >= 650))
+    (wood-amount >= 120)
+    (food-amount >= 200)
+    (wood-amount <= 600)
+    (food-amount <= 900)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 42)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 22)
+    (set-strategic-number sn-stone-gatherer-percentage 6)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (wood-amount < 120)
+=>
+    (set-strategic-number sn-wood-gatherer-percentage 48)
+    (set-strategic-number sn-food-gatherer-percentage 32)
+    (set-strategic-number sn-gold-gatherer-percentage 15)
+    (set-strategic-number sn-stone-gatherer-percentage 5)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (food-amount < 200)
+    (wood-amount >= 150)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 54)
+    (set-strategic-number sn-wood-gatherer-percentage 22)
+    (set-strategic-number sn-gold-gatherer-percentage 18)
+    (set-strategic-number sn-stone-gatherer-percentage 6)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (building-type-count-total town-center >= 3)
+    (or (food-amount < 1000)
+        (gold-amount < 800))
+    (wood-amount >= 300)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 46)
+    (set-strategic-number sn-gold-gatherer-percentage 34)
+    (set-strategic-number sn-wood-gatherer-percentage 15)
+    (set-strategic-number sn-stone-gatherer-percentage 5)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (wood-amount > 600)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 48)
+    (set-strategic-number sn-gold-gatherer-percentage 30)
+    (set-strategic-number sn-wood-gatherer-percentage 16)
+    (set-strategic-number sn-stone-gatherer-percentage 6)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (food-amount > 900)
+    (gold-amount < 300)
+=>
+    (set-strategic-number sn-gold-gatherer-percentage 38)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-food-gatherer-percentage 26)
+    (set-strategic-number sn-stone-gatherer-percentage 6)
+)
+
+; ------------------------------------------------------------
+; 4. IMPERIAL AGE MANPOWER (Deathball, Trash War & Infinite Trade)
+; ------------------------------------------------------------
 (defrule
     (current-age >= imperial-age)
     (gold-amount >= 150)
+    (wood-amount <= 1000)
+    (food-amount <= 1200)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 35)
+    (set-strategic-number sn-food-gatherer-percentage 38)
     (set-strategic-number sn-wood-gatherer-percentage 30)
-    (set-strategic-number sn-gold-gatherer-percentage 25)
-    (set-strategic-number sn-stone-gatherer-percentage 10)
+    (set-strategic-number sn-gold-gatherer-percentage 24)
+    (set-strategic-number sn-stone-gatherer-percentage 8)
 )
 
-; --- DYNAMIC ADJUSTMENT 1: Wood Surplus (>500) -> Shift to Food / Farms ---
 (defrule
-    (current-age >= feudal-age)
-    (wood-amount > 500)
-    (food-amount < 300)
+    (current-age >= imperial-age)
+    (gold-amount < 150)
 =>
-    (set-strategic-number sn-wood-gatherer-percentage 25)
-    (set-strategic-number sn-food-gatherer-percentage 55)
+    (set-strategic-number sn-food-gatherer-percentage 52)
+    (set-strategic-number sn-wood-gatherer-percentage 43)
+    (set-strategic-number sn-gold-gatherer-percentage 5)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
-; --- DYNAMIC ADJUSTMENT 2: Food Surplus (>1000) & Gold Low (<200) -> Shift to Gold ---
 (defrule
-    (current-age >= castle-age)
-    (food-amount > 1000)
+    (current-age >= imperial-age)
+    (wood-amount > 1000)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 46)
+    (set-strategic-number sn-gold-gatherer-percentage 34)
+    (set-strategic-number sn-wood-gatherer-percentage 14)
+    (set-strategic-number sn-stone-gatherer-percentage 6)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (food-amount > 1200)
+    (gold-amount < 400)
+=>
+    (set-strategic-number sn-gold-gatherer-percentage 42)
+    (set-strategic-number sn-wood-gatherer-percentage 32)
+    (set-strategic-number sn-food-gatherer-percentage 20)
+    (set-strategic-number sn-stone-gatherer-percentage 6)
+)
+
+; ------------------------------------------------------------
+; 5. DYNAMIC MARKET BALANCING (Human-Like Resource Trading)
+; ------------------------------------------------------------
+(defrule
+    (current-age == feudal-age)
+    (food-amount >= 850)
     (gold-amount < 200)
+    (can-sell-commodity food)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 25)
-    (set-strategic-number sn-gold-gatherer-percentage 35)
+    (sell-commodity food)
 )
 
-; --- DYNAMIC ADJUSTMENT 3: Gold Surplus (>1200) -> Shift to Food & Wood ---
 (defrule
     (current-age >= castle-age)
-    (gold-amount > 1200)
+    (wood-amount > 1200)
+    (gold-amount < 300)
+    (can-sell-commodity wood)
 =>
-    (set-strategic-number sn-gold-gatherer-percentage 12)
-    (set-strategic-number sn-food-gatherer-percentage 48)
-    (set-strategic-number sn-wood-gatherer-percentage 40)
+    (sell-commodity wood)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (food-amount > 1400)
+    (gold-amount < 300)
+    (can-sell-commodity food)
+=>
+    (sell-commodity food)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle >= 2)
+    (stone-amount > 800)
+    (gold-amount < 400)
+    (can-sell-commodity stone)
+=>
+    (sell-commodity stone)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (gold-amount > 1000)
+    (food-amount < 150)
+    (can-buy-commodity food)
+=>
+    (buy-commodity food)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (gold-amount > 1000)
+    (wood-amount < 100)
+    (can-buy-commodity wood)
+=>
+    (buy-commodity wood)
 )
 ; ============================================================
 ; SECTION 7: DARK AGE HUMAN BUILD ORDER (The 21-Pop Standard)
@@ -701,10 +898,24 @@
     (train villager)
 )
 
+; Universal Feudal House: headroom < 6
 (defrule
     (current-age >= feudal-age)
     (current-age < castle-age)
-    (housing-headroom < 5)
+    (housing-headroom < 6)
+    (population-headroom > 0)
+    (not (civ-selected hun))
+    (can-build house)
+=>
+    (build house)
+)
+
+; Proactive House Queueing with Wood Surplus: headroom < 10
+(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (wood-amount >= 160)
+    (housing-headroom < 10)
     (population-headroom > 0)
     (not (civ-selected hun))
     (can-build house)
@@ -761,6 +972,15 @@
     (build mining-camp)
 )
 
+; Universal Infrastructure: 1 Barracks (prerequisite for Stables & Ranges across all maps)
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total barracks < 1)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total blacksmith < 1)
@@ -782,7 +1002,7 @@
     (current-age >= feudal-age)
     (current-age < castle-age)
     (wood-amount >= 80)
-    (building-type-count-total farm < 16)
+    (building-type-count-total farm < 18)
     (can-build farm)
 =>
     (build farm)
@@ -794,10 +1014,10 @@
     (current-age >= feudal-age)
     (current-age < castle-age)
     (wood-amount >= 140)
-    (can-build-wall 1 palisade-wall)
+    (can-build-wall 2 palisade-wall)
 =>
-    (enable-wall-placement 1)
-    (build-wall 1 palisade-wall)
+    (enable-wall-placement 2)
+    (build-wall 2 palisade-wall)
 )
 
 (defrule
@@ -849,7 +1069,20 @@
 
 (defrule
     (current-age >= castle-age)
-    (housing-headroom < 8)
+    (current-age < imperial-age)
+    (housing-headroom < 10)
+    (population-headroom > 0)
+    (not (civ-selected hun))
+    (can-build house)
+=>
+    (build house)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (wood-amount >= 220)
+    (housing-headroom < 16)
     (population-headroom > 0)
     (not (civ-selected hun))
     (can-build house)
@@ -905,7 +1138,7 @@
     (current-age >= castle-age)
     (current-age < imperial-age)
     (wood-amount >= 75)
-    (building-type-count-total farm < 34)
+    (building-type-count-total farm < 36)
     (can-build farm)
 =>
     (build farm)
@@ -936,21 +1169,21 @@
     (current-age >= castle-age)
     (building-type-count-total castle >= 1)
     (stone-amount >= 150)
-    (can-build-wall 1 stone-wall)
+    (can-build-wall 2 stone-wall-line)
 =>
     (set-strategic-number sn-gate-type-for-wall 1)
-    (enable-wall-placement 1)
-    (build-wall 1 stone-wall)
+    (enable-wall-placement 2)
+    (build-wall 2 stone-wall-line)
 )
 
 (defrule
     (current-age >= castle-age)
     (building-type-count-total gate < 4)
     (stone-amount >= 100)
-    (can-build-gate 1)
+    (can-build-gate 2)
 =>
     (set-strategic-number sn-gate-type-for-wall 1)
-    (build-gate 1)
+    (build-gate 2)
 )
 
 ; University & Tower Defense
@@ -1097,10 +1330,33 @@
     (train villager)
 )
 
+; Imperial Age Houses: standard headroom < 16
+(defrule
+    (current-age >= imperial-age)
+    (housing-headroom < 16)
+    (population-headroom > 0)
+    (not (civ-selected hun))
+    (can-build house)
+=>
+    (build house)
+)
+
+; Proactive Imperial House Queueing with Wood Surplus: headroom < 28
+(defrule
+    (current-age >= imperial-age)
+    (wood-amount >= 300)
+    (housing-headroom < 28)
+    (population-headroom > 0)
+    (not (civ-selected hun))
+    (can-build house)
+=>
+    (build house)
+)
+
 (defrule
     (current-age >= imperial-age)
     (wood-amount >= 75)
-    (building-type-count-total farm < 46)
+    (building-type-count-total farm < 50)
     (can-build farm)
 =>
     (build farm)
@@ -1624,6 +1880,33 @@
 ; --- GUNPOWDER CIVILIZATIONS ---
 (defrule
     (goal gl-civ-archetype archetype-gunpowder)
+    (current-age >= feudal-age)
+    (building-type-count-total archery-range < 1)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-gunpowder)
+    (current-age >= castle-age)
+    (building-type-count-total archery-range < 3)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-gunpowder)
+    (current-age >= imperial-age)
+    (building-type-count-total archery-range < 5)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-gunpowder)
     (current-age >= imperial-age)
     (unit-type-count-total hand-cannoneer < 25)
     (can-train hand-cannoneer)
@@ -1650,6 +1933,33 @@
 )
 
 ; --- MESOAMERICAN CIVILIZATIONS (Aztecs, Incas - Eagle Warriors) ---
+(defrule
+    (goal gl-civ-archetype archetype-meso)
+    (current-age >= feudal-age)
+    (building-type-count-total barracks < 2)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-meso)
+    (current-age >= castle-age)
+    (building-type-count-total barracks < 4)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-meso)
+    (current-age >= imperial-age)
+    (building-type-count-total barracks < 6)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
 (defrule
     (goal gl-civ-archetype archetype-meso)
     (current-age >= feudal-age)
@@ -1680,6 +1990,33 @@
 ; --- CAMEL SPECIALISTS (Saracens, Gurjaras, Berbers) ---
 (defrule
     (goal gl-civ-archetype archetype-camel)
+    (current-age >= feudal-age)
+    (building-type-count-total stable < 1)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-camel)
+    (current-age >= castle-age)
+    (building-type-count-total stable < 3)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-camel)
+    (current-age >= imperial-age)
+    (building-type-count-total stable < 5)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-camel)
     (current-age >= castle-age)
     (unit-type-count-total camel-line < 18)
     (can-train camel-line)
@@ -1697,6 +2034,51 @@
 )
 
 ; --- BALANCED CIVILIZATIONS (Fallback) ---
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= feudal-age)
+    (building-type-count-total stable < 1)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= castle-age)
+    (building-type-count-total stable < 2)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= castle-age)
+    (building-type-count-total archery-range < 2)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= imperial-age)
+    (building-type-count-total stable < 4)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= imperial-age)
+    (building-type-count-total archery-range < 4)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
 (defrule
     (goal gl-civ-archetype archetype-balanced)
     (current-age >= castle-age)
