@@ -331,14 +331,12 @@
 ; Water/Islands, Nomad, or Open, and tailors strategy instantly.
 ; ============================================================
 
-; --- Detect Closed Maps (Arena, Fortress, Black Forest, Hideout, Michi) ---
+; --- Detect Closed Maps (Arena, Fortress, Black Forest, Oasis) ---
 (defrule
     (or (map-type arena)
     (or (map-type fortress)
     (or (map-type black-forest)
-    (or (map-type hideout)
-    (or (map-type michi)
-        (map-type oasis))))))
+        (map-type oasis))))
 =>
     (set-goal gl-map-style style-closed)
     (chat-local-to-self "ZULFIKAR: Closed Map detected -> Fast Castle & Boom focus.")
@@ -350,21 +348,17 @@
     (or (map-type islands)
     (or (map-type team-islands)
     (or (map-type migration)
-    (or (map-type baltic)
-        (map-type mediterranean)))))
+        (map-type baltic))))
 =>
     (set-goal gl-map-style style-water)
     (chat-local-to-self "ZULFIKAR: Water Map detected -> Naval dominance focus.")
     (disable-self)
 )
 
-; --- Detect Nomad Maps (Nomad, Land Nomad, African Clearing, or 0 TCs at start) ---
+; --- Detect Nomad Maps (Nomad start: 0 TCs at start) ---
 (defrule
-    (or (map-type nomad)
-    (or (map-type land-nomad)
-    (or (map-type african-clearing)
-        (and (current-age <= dark-age)
-             (building-type-count-total town-center < 1)))))
+    (current-age <= dark-age)
+    (building-type-count-total town-center < 1)
 =>
     (set-goal gl-map-style style-nomad)
     (chat-local-to-self "ZULFIKAR: Nomad start detected -> Immediate TC construction.")
@@ -398,13 +392,11 @@
     (disable-self)
 )
 
-; --- Large / Gigantic / Ludikris Maps (Massive Scale) ---
+; --- Large / Giant / Ludikris Maps (Massive Scale) ---
 (defrule
     (or (map-size large)
-    (or (map-size very-large)
-    (or (map-size huge)
-    (or (map-size gigantic)
-        (map-size ludikris)))))
+    (or (map-size giant)
+        (map-size ludikris)))
 =>
     (set-goal gl-map-size size-large)
     ; Scale exploration and camps outwards
@@ -441,13 +433,13 @@
 
 ; --- Cavalry Civs (Franks, Magyars, Berbers, Lithuanians, Huns, Teutons, Persians, Burgundians, Poles, Bulgarians, Cumans, Georgians) ---
 (defrule
-    (or (civ-selected franks)
+    (or (civ-selected frankish)
     (or (civ-selected magyar)
     (or (civ-selected berbers)
     (or (civ-selected lithuanians)
     (or (civ-selected hun)
-    (or (civ-selected teutons)
-    (or (civ-selected persians)
+    (or (civ-selected teutonic)
+    (or (civ-selected persian)
     (or (civ-selected burgundians)
     (or (civ-selected poles)
     (or (civ-selected bulgarians)
@@ -461,13 +453,13 @@
 
 ; --- Archer Civs (Britons, Mayans, Ethiopians, Vietnamese, Tatars, Koreans, Italians) ---
 (defrule
-    (or (civ-selected britons)
+    (or (civ-selected briton)
     (or (civ-selected mayan)
     (or (civ-selected ethiopian)
     (or (civ-selected vietnamese)
     (or (civ-selected tatars)
     (or (civ-selected korean)
-        (civ-selected italians)))))))
+        (civ-selected italian)))))))
 =>
     (set-goal gl-civ-archetype archetype-archer)
     (chat-local-to-self "ZULFIKAR: Archetype -> ARCHER")
@@ -476,12 +468,12 @@
 
 ; --- Infantry / Siege Civs (Goths, Celts, Japanese, Romans, Vikings, Slavs, Malians, Armenians) ---
 (defrule
-    (or (civ-selected goths)
-    (or (civ-selected celts)
+    (or (civ-selected gothic)
+    (or (civ-selected celtic)
     (or (civ-selected japanese)
     (or (civ-selected romans)
-    (or (civ-selected vikings)
-    (or (civ-selected slav)
+    (or (civ-selected viking)
+    (or (civ-selected slavic)
     (or (civ-selected malian)
         (civ-selected armenians))))))))
 =>
@@ -492,11 +484,11 @@
 
 ; --- Gunpowder Civs (Turks, Bohemians, Spanish, Portuguese, Hindustanis) ---
 (defrule
-    (or (civ-selected turks)
+    (or (civ-selected turkish)
     (or (civ-selected bohemians)
     (or (civ-selected spanish)
     (or (civ-selected portuguese)
-        (civ-selected hindustanis)))))
+        (civ-selected indian)))))
 =>
     (set-goal gl-civ-archetype archetype-gunpowder)
     (chat-local-to-self "ZULFIKAR: Archetype -> GUNPOWDER")
@@ -515,7 +507,7 @@
 
 ; --- Camel / Counter Specialists (Saracens, Gurjaras, Berbers) ---
 (defrule
-    (or (civ-selected saracens)
+    (or (civ-selected saracen)
         (civ-selected gurjaras))
 =>
     (set-goal gl-civ-archetype archetype-camel)
@@ -2035,7 +2027,7 @@
     (set-strategic-number sn-number-attack-groups 0)
     (set-strategic-number sn-percent-attack-soldiers 0)
     (set-goal gl-attack-status 0)
-    (up-reset-attack-now)
+    (up-retreat-now)
     (chat-local-to-self "ZULFIKAR: Forces depleted. Regrouping at fortress.")
 )
 
