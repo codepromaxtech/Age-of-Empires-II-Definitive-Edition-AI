@@ -1,776 +1,609 @@
 ; ============================================================
 ; ZULFIKAR - Age of Empires II: Definitive Edition AI
-; Strategy: Defensive Fortress with Retaliatory Counter-Attack
+; Version: 3.5 (Universal Multi-Style Adaptation Engine)
+; 
+; Fully adaptive across:
+; - Map Geometry: Open, Closed (Arena/BF), Water/Islands, Nomad
+; - Map Size: Tiny (1v1) to Ludikris (Massive Scale)
+; - Game Stage: Dark Opening -> Feudal -> 3-TC Boom -> Imp Deathball -> Trash War
+; - Dynamic Macro: Real-Time Resource Bank Feedback & Reallocation
+; - All 45 Civilizations & Castle Unique Units + Unique Techs
+; - Tactical Counters, Cohesive Wave Warfare & 100% Fair Play
+; ============================================================
+; ============================================================
+; SECTION 1: CONSTANTS & SYSTEM CONFIGURATION
 ; ============================================================
 
-; --- CONSTANTS ---
-(defconst gl-dark-age-vils 22)
-(defconst gl-feudal-age-vils 40)
-(defconst gl-castle-age-vils 100)
-(defconst gl-imperial-age-vils 130)
-(defconst gl-target-player 0)
+; --- Villager Population Caps ---
+(defconst gl-dark-age-vils 21)
+(defconst gl-feudal-age-vils 38)
+(defconst gl-castle-age-vils 95)
+(defconst gl-imperial-age-vils 135)
 
-; --- Comprehensive Research Constants (Fixing all 2005 Errors) ---
-(defconst ri-wheelbarrow 213)
+; --- Adaptation Goals & State Tracking ---
+(defconst gl-map-style 1)          ; 1=Open, 2=Closed (Arena/BF), 3=Water, 4=Nomad
+(defconst gl-map-size 2)           ; 1=Small, 2=Medium, 3=Large/Ludikris
+(defconst gl-civ-archetype 3)      ; 1=Cavalry, 2=Archer, 3=Infantry, 4=Gunpowder, 5=Meso, 6=Camel, 7=Balanced
+(defconst gl-game-stage 4)         ; 0=Dark, 1=Feudal, 2=Castle, 3=Imp, 4=TrashWar
+(defconst gl-attack-status 5)      ; 0=Regrouping/Defending, 1=Attacking
+(defconst gl-target-player 6)
+
+; --- Timers ---
+(defconst gl-wave-timer 1)         ; Attack wave pacing
+(defconst gl-macro-timer 2)        ; Macro rebalancing timer
+(defconst gl-scout-timer 3)        ; Exploration timer
+
+; --- Map Style Enums ---
+(defconst style-open 1)
+(defconst style-closed 2)
+(defconst style-water 3)
+(defconst style-nomad 4)
+
+; --- Map Size Enums ---
+(defconst size-small 1)
+(defconst size-medium 2)
+(defconst size-large 3)
+
+; --- Civilization Archetype Enums ---
+(defconst archetype-cavalry 1)
+(defconst archetype-archer 2)
+(defconst archetype-infantry 3)
+(defconst archetype-gunpowder 4)
+(defconst archetype-meso 5)
+(defconst archetype-camel 6)
+(defconst archetype-balanced 7)
+
+; --- Ages ---
+(defconst dark-age 0)
+(defconst feudal-age 1)
+(defconst castle-age 2)
+(defconst imperial-age 3)
+
+; --- Strategic Numbers (DE / UP Engine standard) ---
+(defconst sn-percent-civilian-gatherers 0)
+(defconst sn-cap-civilian-builders 5)
+(defconst sn-percent-civilian-builders 5)
+(defconst sn-food-gatherer-percentage 14)
+(defconst sn-wood-gatherer-percentage 11)
+(defconst sn-gold-gatherer-percentage 13)
+(defconst sn-stone-gatherer-percentage 12)
+(defconst sn-initial-exploration-required 15)
+(defconst sn-percent-exploration-required 16)
+(defconst sn-total-number-explorers 20)
+(defconst sn-number-explore-groups 18)
+(defconst sn-home-exploration-time 256)
+(defconst sn-enable-new-building-system 242)
+(defconst sn-placement-zone-size 268)
+(defconst sn-placement-fail-delta 269)
+(defconst sn-percent-building-cancellation 243)
+(defconst sn-minimum-town-size 2)
+(defconst sn-maximum-town-size 3)
+(defconst sn-safe-town-size 250)
+(defconst sn-camp-max-distance 111)
+(defconst sn-mill-max-distance 71)
+(defconst sn-lumber-camp-max-distance 260)
+(defconst sn-mining-camp-max-distance 261)
+(defconst sn-dropsite-separation-distance 248)
+(defconst sn-allow-adjacent-dropsites 272)
+(defconst sn-food-dropsite-distance 65)
+(defconst sn-wood-dropsite-distance 64)
+(defconst sn-gold-dropsite-distance 63)
+(defconst sn-stone-dropsite-distance 62)
+(defconst sn-enable-boar-hunting 120)
+(defconst sn-minimum-boar-hunt-group-size 252)
+(defconst sn-minimum-number-hunters 121)
+(defconst sn-livestock-to-town-center 263)
+(defconst sn-enable-training-queue 264)
+(defconst sn-enable-research-queue 264)
+(defconst sn-object-repair-level 122)
+(defconst sn-gather-idle-soldiers-at-center 133)
+(defconst sn-gather-defense-units 134)
+(defconst sn-task-ungrouped-soldiers 135)
+(defconst sn-enable-patrol-attack 123)
+(defconst sn-attack-intelligence 125)
+(defconst sn-number-attack-groups 30)
+(defconst sn-minimum-attack-group-size 31)
+(defconst sn-maximum-attack-group-size 32)
+(defconst sn-percent-attack-soldiers 40)
+(defconst sn-number-defend-groups 33)
+(defconst sn-minimum-defend-group-size 34)
+(defconst sn-maximum-defend-group-size 35)
+(defconst sn-defense-distance 36)
+(defconst sn-sentry-distance 9)
+(defconst sn-sentry-distance-variation 37)
+(defconst sn-percent-enemy-sighted-response 7)
+(defconst sn-enemy-sighted-response-distance 8)
+(defconst sn-maximum-garrison-fill 274)
+(defconst sn-number-garrison-units 275)
+(defconst sn-disable-villager-garrison 291)
+(defconst sn-target-player-number 249)
+(defconst sn-focus-player-number 251)
+(defconst sn-building-targeting-mode 255)
+(defconst sn-wall-targeting-mode 262)
+(defconst sn-gate-type-for-wall 304)
+(defconst sn-relic-return-distance 216)
+(defconst sn-coop-share-information 309)
+(defconst sn-coop-share-attacking 308)
+(defconst sn-do-not-scale-for-difficulty-level 124)
+(defconst sn-easiest-reaction-percentage 138)
+(defconst sn-easier-reaction-percentage 139)
+
+; --- Research Identifiers ---
+(defconst ri-loom 22)
 (defconst ri-wheel-barrow 213)
-(defconst ri-handcart 249)
 (defconst ri-hand-cart 249)
-(defconst ri-horsecollar 18)
 (defconst ri-horse-collar 18)
-(defconst ri-heavyplow 19)
 (defconst ri-heavy-plow 19)
-(defconst ri-croprotation 20)
 (defconst ri-crop-rotation 20)
-(defconst ri-doublebitaxe 202)
 (defconst ri-double-bit-axe 202)
-(defconst ri-bowsaw 203)
 (defconst ri-bow-saw 203)
-(defconst ri-twomansaw 204)
 (defconst ri-two-man-saw 204)
-(defconst ri-goldmining 55)
 (defconst ri-gold-mining 55)
-(defconst ri-goldshaftmining 182)
 (defconst ri-gold-shaft-mining 182)
-(defconst ri-stonemining 102)
 (defconst ri-stone-mining 102)
-(defconst ri-stoneshaftmining 103)
 (defconst ri-stone-shaft-mining 103)
 (defconst ri-fletching 199)
-(defconst ri-bodkinarrow 200)
 (defconst ri-bodkin-arrow 200)
 (defconst ri-bracer 201)
-(defconst ri-paddedarcherarmor 211)
 (defconst ri-padded-archer-armor 211)
-(defconst ri-leatherarcherarmor 212)
 (defconst ri-leather-archer-armor 212)
-(defconst ri-ringarcherarmor 219)
 (defconst ri-ring-archer-armor 219)
 (defconst ri-forging 67)
-(defconst ri-ironcasting 68)
 (defconst ri-iron-casting 68)
-(defconst ri-blastfurnace 75)
 (defconst ri-blast-furnace 75)
-(defconst ri-scalemail 74)
 (defconst ri-scale-mail 74)
-(defconst ri-chainmail 76)
 (defconst ri-chain-mail 76)
-(defconst ri-platemail 77)
 (defconst ri-plate-mail 77)
-(defconst ri-scalebarding 80)
 (defconst ri-scale-barding 80)
-(defconst ri-chainbarding 81)
 (defconst ri-chain-barding 81)
-(defconst ri-platebarding 82)
 (defconst ri-plate-barding 82)
-(defconst ri-manatarms 13)
+(defconst ri-bloodlines 435)
+(defconst ri-husbandry 39)
+(defconst ri-thumb-ring 437)
+(defconst ri-parthian-tactics 436)
+(defconst ri-ballistics 93)
+(defconst ri-chemistry 47)
+(defconst ri-siege-engineers 377)
+(defconst ri-conscription 315)
+(defconst ri-murder-holes 221)
+(defconst ri-guard-tower 166)
+(defconst ri-keep 167)
+(defconst ri-bombard-tower 168)
+(defconst ri-arrowslits 608)
+(defconst ri-heated-shot 171)
+(defconst ri-masonry 164)
+(defconst ri-architecture 165)
+(defconst ri-treadmill-crane 169)
+(defconst ri-supplies 716)
+(defconst ri-squires 215)
+(defconst ri-arson 605)
+(defconst ri-gambesons 775)
+(defconst ri-redemption 184)
+(defconst ri-atonement 185)
+(defconst ri-sanctity 189)
+(defconst ri-fervor 190)
+(defconst ri-illumination 186)
+(defconst ri-theocracy 187)
+(defconst ri-block-printing 188)
+(defconst ri-faith 191)
+(defconst ri-heresy 192)
+(defconst ri-spies 408)
+(defconst ri-caravan 175)
+(defconst ri-coinage 173)
+(defconst ri-banking 174)
+(defconst ri-guilds 175)
 (defconst ri-man-at-arms 13)
-(defconst ri-longswordsman 14)
 (defconst ri-long-swordsman 14)
-(defconst ri-twohandedswordsman 15)
 (defconst ri-two-handed-swordsman 15)
 (defconst ri-champion 16)
 (defconst ri-pikeman 197)
 (defconst ri-halberdier 429)
 (defconst ri-crossbow 100)
 (defconst ri-arbalest 101)
-(defconst ri-eliteskirmisher 98)
 (defconst ri-elite-skirmisher 98)
-(defconst ri-wargalley 21)
+(defconst ri-light-cavalry 130)
+(defconst ri-hussar 428)
+(defconst ri-cavalier 16)
+(defconst ri-paladin 17)
+(defconst ri-heavy-camel 236)
+(defconst ri-capped-ram 133)
+(defconst ri-siege-ram 134)
+(defconst ri-onager 131)
+(defconst ri-siege-onager 132)
+(defconst ri-heavy-scorpion 135)
 (defconst ri-war-galley 21)
 (defconst ri-galleon 34)
 (defconst ri-careening 8)
-(defconst ri-drydock 45)
 (defconst ri-dry-dock 45)
 (defconst ri-shipwright 373)
-(defconst ri-fastfireship 24)
 (defconst ri-fast-fire-ship 24)
-(defconst ri-heavydemolitionship 23)
 (defconst ri-heavy-demolition-ship 23)
-(defconst ri-elitecannongalleon 37)
 (defconst ri-elite-cannon-galleon 37)
-(defconst ri-bloodlines 435)
-(defconst ri-husbandry 39)
-(defconst ri-thumbring 437)
-(defconst ri-thumb-ring 437)
-(defconst ri-parthiantactics 436)
-(defconst ri-parthian-tactics 436)
-(defconst ri-ballistics 93)
-(defconst ri-chemistry 47)
-(defconst ri-siegeengineers 377)
-(defconst ri-siege-engineers 377)
-(defconst ri-conscription 315)
-(defconst ri-hoardings 379)
-(defconst ri-murderholes 221)
-(defconst ri-murder-holes 221)
-(defconst ri-townwatch 8)
-(defconst ri-town-watch 8)
-(defconst ri-townpatrol 280)
-(defconst ri-town-patrol 280)
-(defconst ri-spies 408)
-(defconst ri-loom 22)
-(defconst ri-handcannon 85)
-(defconst ri-hand-cannon 85)
-(defconst ri-hussar 428)
-(defconst ri-lightcavalry 130)
-(defconst ri-light-cavalry 130)
-(defconst ri-paladin 17)
-(defconst ri-cavalier 16)
-(defconst ri-onager 131)
-(defconst ri-siegeonager 132)
-(defconst ri-siege-onager 132)
-(defconst ri-cappedram 133)
-(defconst ri-capped-ram 133)
-(defconst ri-siegeram 134)
-(defconst ri-siege-ram 134)
-(defconst ri-heavyscorpion 135)
-(defconst ri-heavy-scorpion 135)
-(defconst ri-redemption 184)
-(defconst ri-atonement 185)
-(defconst ri-illumination 186)
-(defconst ri-theocracy 187)
-(defconst ri-blockprinting 188)
-(defconst ri-block-printing 188)
-(defconst ri-sanctity 189)
-(defconst ri-fervor 190)
-(defconst ri-faith 191)
-(defconst ri-architecture 165)
-(defconst ri-masonry 164)
-(defconst ri-fortifiedwall 194)
-(defconst ri-fortified-wall 194)
-(defconst ri-guardtower 166)
-(defconst ri-guard-tower 166)
-(defconst ri-keep 167)
-(defconst ri-bombardtower 168)
-(defconst ri-bombard-tower 168)
-(defconst ri-arrowslits 608)
-(defconst ri-treadmillcrane 169)
-(defconst ri-treadmill-crane 169)
-(defconst ri-heatedshot 171)
-(defconst ri-heated-shot 171)
-(defconst ri-banking 172)
-(defconst ri-coinage 173)
-(defconst ri-guilds 174)
-(defconst ri-caravan 175)
-(defconst ri-supplies 716)
-(defconst ri-arson 605)
-(defconst ri-gambesons 775)
-(defconst ri-devotion 712)
-(defconst ri-heavy-cavalry-archer 310)
-(defconst ri-sappers 315)
-(defconst ri-squires 215)
-; --- Master Strategic Number Definitions (Fixing Error 2005) ---
-(defconst dark-age 0)
-(defconst feudal-age 1)
-(defconst castle-age 2)
-(defconst imperial-age 3)
-(defconst sn-allow-adjacent-dropsites 272)
-(defconst sn-attack-intelligence 125)
-(defconst sn-building-targeting-mode 255)
-(defconst sn-camp-max-distance 111)
-(defconst sn-cap-civilian-builders 6)
-(defconst sn-coop-share-attacking 308)
-(defconst sn-coop-share-information 309)
-(defconst sn-defense-distance 36)
-(defconst sn-disable-villager-garrison 291)
-(defconst sn-do-not-scale-for-difficulty-level 124)
-(defconst sn-dropsite-separation-distance 248)
-(defconst sn-easier-reaction-percentage 139)
-(defconst sn-easiest-reaction-percentage 138)
-(defconst sn-enable-boar-hunting 120)
-(defconst sn-enable-new-building-system 242)
-(defconst sn-enable-patrol-attack 123)
-(defconst sn-enable-research-queue 264)
-(defconst sn-enable-training-queue 264)
-(defconst sn-enemy-sighted-response-distance 8)
-(defconst sn-focus-player-number 251)
-(defconst sn-food-dropsite-distance 65)
-(defconst sn-food-gatherer-percentage 14)
-(defconst sn-gate-type-for-wall 304)
-(defconst sn-gather-defense-units 134)
-(defconst sn-gather-idle-soldiers-at-center 133)
-(defconst sn-gold-dropsite-distance 63)
-(defconst sn-gold-gatherer-percentage 13)
-(defconst sn-home-exploration-time 256)
-(defconst sn-ignore-attack-group-under-attack 129)
-(defconst sn-initial-attack-delay 67)
-(defconst sn-initial-attack-delay-type 68)
-(defconst sn-initial-exploration-required 15)
-(defconst sn-livestock-to-town-center 263)
-(defconst sn-lumber-camp-max-distance 260)
-(defconst sn-maximum-attack-group-size 32)
-(defconst sn-maximum-boat-attack-group-size 55)
-(defconst sn-maximum-defend-group-size 35)
-(defconst sn-maximum-garrison-fill 274)
-(defconst sn-maximum-town-size 3)
-(defconst sn-mill-max-distance 71)
-(defconst sn-minimum-attack-group-size 31)
-(defconst sn-minimum-boar-hunt-group-size 252)
-(defconst sn-minimum-boat-attack-group-size 54)
-(defconst sn-minimum-boat-explore-group-size 208)
-(defconst sn-minimum-defend-group-size 34)
-(defconst sn-minimum-number-hunters 121)
-(defconst sn-minimum-town-size 2)
-(defconst sn-mining-camp-max-distance 261)
-(defconst sn-number-attack-groups 30)
-(defconst sn-number-boat-attack-groups 52)
-(defconst sn-number-boat-explore-groups 51)
-(defconst sn-number-civilian-militia 257)
-(defconst sn-number-defend-groups 33)
-(defconst sn-number-explore-groups 18)
-(defconst sn-number-garrison-units 275)
-(defconst sn-object-repair-level 122)
-(defconst sn-percent-attack-boats 41)
-(defconst sn-percent-attack-soldiers 40)
-(defconst sn-percent-building-cancellation 243)
-(defconst sn-percent-civilian-builders 5)
-(defconst sn-percent-civilian-gatherers 0)
-(defconst sn-percent-enemy-sighted-response 7)
-(defconst sn-percent-exploration-required 16)
-(defconst sn-placement-fail-delta 269)
-(defconst sn-placement-zone-size 268)
-(defconst sn-relic-return-distance 216)
-(defconst sn-safe-town-size 250)
-(defconst sn-sentry-distance 9)
-(defconst sn-sentry-distance-variation 37)
-(defconst sn-stone-dropsite-distance 62)
-(defconst sn-stone-gatherer-percentage 12)
-(defconst sn-target-player-number 249)
-(defconst sn-task-ungrouped-soldiers 135)
-(defconst sn-total-number-explorers 20)
-(defconst sn-wall-targeting-mode 262)
-(defconst sn-wood-dropsite-distance 64)
-(defconst sn-wood-gatherer-percentage 11)
-; --- Unique Unit & Tech Placeholders ---
 (defconst my-unique-unit-upgrade 0)
 (defconst my-unique-research 0)
 (defconst my-castle-unique-research 0)
-
 ; ============================================================
-; PHASE 1: INITIALIZATION
+; SECTION 2: INITIALIZATION & STRATEGIC FOUNDATIONS
 ; ============================================================
 
 (defrule
     (true)
 =>
-    ; --- Building System ---
+    ; Defaults: Open land map, medium size, balanced archetype
+    (set-goal gl-map-style style-open)
+    (set-goal gl-map-size size-medium)
+    (set-goal gl-civ-archetype archetype-balanced)
+    (set-goal gl-game-stage dark-age)
+    (set-goal gl-attack-status 0)
+
+    ; Building placement defaults
     (set-strategic-number sn-enable-new-building-system 1)
-    (set-strategic-number sn-percent-building-cancellation 20)
-    (set-strategic-number sn-cap-civilian-builders 15)
-    (set-strategic-number sn-percent-civilian-builders 35)
+    (set-strategic-number sn-percent-building-cancellation 10)
+    (set-strategic-number sn-cap-civilian-builders 8)
+    (set-strategic-number sn-percent-civilian-builders 25)
+    (set-strategic-number sn-placement-zone-size 4)
+    (set-strategic-number sn-placement-fail-delta 1)
+    (set-strategic-number sn-minimum-town-size 12)
+    (set-strategic-number sn-maximum-town-size 25)
+    (set-strategic-number sn-safe-town-size 35)
 
-    ; --- Training & Research Queuing (queue units/techs faster) ---
-    (set-strategic-number sn-enable-training-queue 2)
-    (set-strategic-number sn-enable-research-queue 1)
-
-    ; --- Exploration ---
-    (set-strategic-number sn-total-number-explorers 1)
-    (set-strategic-number sn-number-explore-groups 1)
-    (set-strategic-number sn-initial-exploration-required 0)
-    (set-strategic-number sn-percent-exploration-required 50)
-    (set-strategic-number sn-home-exploration-time 300)
-
-    ; --- Economy (Dark Age: heavy food for fast Feudal) ---
-    (set-strategic-number sn-food-gatherer-percentage 70)
-    (set-strategic-number sn-wood-gatherer-percentage 20)
-    (set-strategic-number sn-gold-gatherer-percentage 0)
-    (set-strategic-number sn-stone-gatherer-percentage 10)
-    (set-strategic-number sn-percent-civilian-gatherers 100)
-
-    ; --- Boar Hunting & Foraging ---
-    (set-strategic-number sn-enable-boar-hunting 2)
-    (set-strategic-number sn-minimum-boar-hunt-group-size 3)
-    (set-strategic-number sn-minimum-number-hunters 4)
-    (set-strategic-number sn-livestock-to-town-center 1)
-    (disable-self)
-)
-
-(defrule
-    (true)
-=>
-    ; --- Town Layout & Safe Zone (Structured Grid Building) ---
-    (set-strategic-number sn-maximum-town-size 30)
-    (set-strategic-number sn-minimum-town-size 14)
-    (set-strategic-number sn-safe-town-size 38)
-    (set-strategic-number sn-placement-zone-size 7)
-    (set-strategic-number sn-placement-fail-delta 2)
+    ; Dropsite distancing
+    (set-strategic-number sn-food-dropsite-distance 4)
+    (set-strategic-number sn-wood-dropsite-distance 4)
+    (set-strategic-number sn-gold-dropsite-distance 4)
+    (set-strategic-number sn-stone-dropsite-distance 4)
+    (set-strategic-number sn-dropsite-separation-distance 6)
+    (set-strategic-number sn-allow-adjacent-dropsites 1)
     (set-strategic-number sn-camp-max-distance 20)
     (set-strategic-number sn-mill-max-distance 20)
     (set-strategic-number sn-lumber-camp-max-distance 25)
     (set-strategic-number sn-mining-camp-max-distance 25)
 
-    ; --- Dropsite Optimization ---
-    (set-strategic-number sn-food-dropsite-distance 4)
-    (set-strategic-number sn-wood-dropsite-distance 4)
-    (set-strategic-number sn-gold-dropsite-distance 4)
-    (set-strategic-number sn-stone-dropsite-distance 4)
-    (set-strategic-number sn-dropsite-separation-distance 8)
+    ; APM & queuing
+    (set-strategic-number sn-enable-training-queue 2)
+    (set-strategic-number sn-enable-research-queue 1)
 
-    ; --- Building Repair (MAX: villagers auto-repair ALL damaged buildings) ---
+    ; Scouting
+    (set-strategic-number sn-total-number-explorers 1)
+    (set-strategic-number sn-number-explore-groups 1)
+    (set-strategic-number sn-initial-exploration-required 0)
+    (set-strategic-number sn-percent-exploration-required 40)
+    (set-strategic-number sn-home-exploration-time 260)
+
+    ; Dark Age Gatherers: 65% Food, 35% Wood, 0% Gold, 0% Stone
+    (set-strategic-number sn-food-gatherer-percentage 65)
+    (set-strategic-number sn-wood-gatherer-percentage 35)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-percent-civilian-gatherers 100)
+
+    ; Boar hunting & livestock under TC
+    (set-strategic-number sn-enable-boar-hunting 2)
+    (set-strategic-number sn-minimum-boar-hunt-group-size 1)
+    (set-strategic-number sn-minimum-number-hunters 6)
+    (set-strategic-number sn-livestock-to-town-center 1)
+
+    ; Building repair
     (set-strategic-number sn-object-repair-level 32767)
 
-    ; --- Defensive Posture (NO unprovoked attacks) ---
-    (set-strategic-number sn-percent-enemy-sighted-response 100)
-    (set-strategic-number sn-enemy-sighted-response-distance 12)
-    (set-strategic-number sn-number-attack-groups 0)
-    (set-strategic-number sn-minimum-attack-group-size 20)
-    (set-strategic-number sn-maximum-attack-group-size 40)
-    (set-strategic-number sn-number-defend-groups 3)
-    (set-strategic-number sn-minimum-defend-group-size 5)
-    (set-strategic-number sn-maximum-defend-group-size 20)
-    (set-strategic-number sn-defense-distance 15)
-    (set-strategic-number sn-sentry-distance 15)
-    (set-strategic-number sn-sentry-distance-variation 4)
-    (disable-self)
-)
-
-(defrule
-    (true)
-=>
-    ; --- Attack Intelligence & Patrol ---
-    (set-strategic-number sn-attack-intelligence 1)
+    ; Combat intelligence
     (set-strategic-number sn-enable-patrol-attack 1)
-    (set-strategic-number sn-initial-attack-delay 0)
-    (set-strategic-number sn-initial-attack-delay-type 0)
-    (set-strategic-number sn-ignore-attack-group-under-attack 1)
-    (set-strategic-number sn-allow-adjacent-dropsites 1) ; Allows tighter lumber camps to clear out woodlines faster
-
-    ; --- Garrison Control ---
-    (set-strategic-number sn-maximum-garrison-fill 15)
-    (set-strategic-number sn-number-garrison-units 5)
-
-    ; --- Idle Soldier Management ---
+    (set-strategic-number sn-attack-intelligence 1)
     (set-strategic-number sn-gather-idle-soldiers-at-center 1)
     (set-strategic-number sn-gather-defense-units 1)
     (set-strategic-number sn-task-ungrouped-soldiers 1)
-    (set-strategic-number sn-number-civilian-militia 10)
-
-    ; --- Difficulty: consistent behavior at all levels ---
-    (set-strategic-number sn-do-not-scale-for-difficulty-level 1)
-    (set-strategic-number sn-easiest-reaction-percentage 100)
-    (set-strategic-number sn-easier-reaction-percentage 100)
-
-    ; --- Cooperative Play (Team games) ---
     (set-strategic-number sn-coop-share-information 1)
     (set-strategic-number sn-coop-share-attacking 1)
-
-    ; --- Advanced Building Targeting (defensive focus) ---
     (set-strategic-number sn-building-targeting-mode 1)
     (set-strategic-number sn-wall-targeting-mode 1)
-
-    ; --- Force Stone Gates (fixes wooden gate bug) ---
-    ; Value 0 = palisade gate (default), 1 = stone gate
     (set-strategic-number sn-gate-type-for-wall 1)
 
+    ; Timers
+    (enable-timer gl-wave-timer 60)
+    (enable-timer gl-macro-timer 15)
+
+    (chat-to-all "ZULFIKAR: gl hf! Adaptive Universal Engine active.")
     (disable-self)
 )
 
+; Focus closest enemy
+(defrule
+    (game-time > 25)
+=>
+    (up-find-player enemy find-closest gl-target-player)
+    (up-modify-sn sn-target-player-number g:= gl-target-player)
+    (up-modify-sn sn-focus-player-number g:= gl-target-player)
+)
 ; ============================================================
-; PHASE 1.5: HIGH RESOURCE START DETECTION (Aggressive Opening)
-; When resources are abundant from the start, rush military + defenses simultaneously
+; SECTION 3: MAP GEOMETRY & STYLE ADAPTATION
+; Detects whether the battlefield is Closed (Arena/BF),
+; Water/Islands, Nomad, or Open, and tailors strategy instantly.
 ; ============================================================
 
-; --- Detect High Resource Start (e.g. High Resources game setting) ---
-; If we have 500+ food and 500+ wood in Dark Age, go all-in aggression
+; --- Detect Closed Maps (Arena, Fortress, Black Forest, Hideout, Michi) ---
 (defrule
+    (or (map-type arena)
+    (or (map-type fortress)
+    (or (map-type black-forest)
+    (or (map-type hideout)
+    (or (map-type michi)
+        (map-type oasis))))))
+=>
+    (set-goal gl-map-style style-closed)
+    (chat-local-to-self "ZULFIKAR: Closed Map detected -> Fast Castle & Boom focus.")
+    (disable-self)
+)
+
+; --- Detect Water / Island Maps (Islands, Team Islands, Migration, Baltic) ---
+(defrule
+    (or (map-type islands)
+    (or (map-type team-islands)
+    (or (map-type migration)
+    (or (map-type baltic)
+        (map-type mediterranean)))))
+=>
+    (set-goal gl-map-style style-water)
+    (chat-local-to-self "ZULFIKAR: Water Map detected -> Naval dominance focus.")
+    (disable-self)
+)
+
+; --- Detect Nomad Maps (Nomad, Land Nomad, African Clearing, or 0 TCs at start) ---
+(defrule
+    (or (map-type nomad)
+    (or (map-type land-nomad)
+    (or (map-type african-clearing)
+        (and (current-age <= dark-age)
+             (building-type-count-total town-center < 1)))))
+=>
+    (set-goal gl-map-style style-nomad)
+    (chat-local-to-self "ZULFIKAR: Nomad start detected -> Immediate TC construction.")
+    (disable-self)
+)
+
+; --- Nomad Execution: Build first Town Center ASAP ---
+(defrule
+    (goal gl-map-style style-nomad)
     (current-age <= dark-age)
-    (food-amount >= 500)
-    (wood-amount >= 500)
-    (building-type-count-total barracks < 2)
-    (can-build barracks)
-=>
-    (build barracks)
-    (chat-to-all "ZULFIKAR: High resources detected! Building war machine early!")
-)
-
-; --- HIGH RESOURCE / EXTREME MODE: Extra buildings when rich ---
-(defrule
-    (current-age >= feudal-age)
-    (food-amount >= 400)
-    (wood-amount >= 400)
-    (building-type-count-total barracks < 3)
-    (can-build barracks)
-=>
-    (build barracks)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (food-amount >= 300)
-    (wood-amount >= 300)
-    (building-type-count-total archery-range < 3)
-    (can-build archery-range)
-=>
-    (build archery-range)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (food-amount >= 300)
-    (wood-amount >= 200)
-    (building-type-count-total stable < 1)
-    (can-build stable)
-=>
-    (build stable)
-)
-
-; --- HIGH RESOURCE / EXTREME MODE: Scale army UP when resources overflow ---
-; These only fire when resources are very high (500+), adding on top of Phase 12 caps.
-; On normal games these rarely trigger. On High Resources/Ludikris they kick in hard.
-
-; Dark Age: Extra militia when swimming in resources
-(defrule
-    (current-age <= feudal-age)
-    (food-amount >= 500)
-    (gold-amount >= 200)
-    (unit-type-count-total militiaman-line < 8)
-    (can-train militiaman-line)
-=>
-    (train militiaman-line)
-)
-
-; Feudal: Mass archers when rich
-(defrule
-    (current-age >= feudal-age)
-    (food-amount >= 500)
-    (wood-amount >= 500)
-    (unit-type-count-total archer-line < 25)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-; Feudal: Extra skirmishers when rich
-(defrule
-    (current-age >= feudal-age)
-    (food-amount >= 400)
-    (gold-amount >= 200)
-    (unit-type-count-total skirmisher-line < 12)
-    (can-train skirmisher-line)
-=>
-    (train skirmisher-line)
-)
-
-; Castle: Mass knights when overflowing
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 500)
-    (gold-amount >= 500)
-    (unit-type-count-total knight-line < 25)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-; Castle: Extra spearmen when rich
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 500)
-    (unit-type-count-total spearman-line < 25)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-; Imperial: Massive army when resources overflowing
-(defrule
-    (current-age >= imperial-age)
-    (food-amount >= 500)
-    (gold-amount >= 500)
-    (unit-type-count-total knight-line < 40)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (food-amount >= 500)
-    (wood-amount >= 500)
-    (unit-type-count-total archer-line < 40)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (food-amount >= 500)
-    (unit-type-count-total militiaman-line < 40)
-    (can-train militiaman-line)
-=>
-    (train militiaman-line)
-)
-
-; Extra siege workshop + stable when swimming in resources
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 500)
-    (wood-amount >= 500)
-    (building-type-count-total siege-workshop < 2)
-    (can-build siege-workshop)
-=>
-    (build siege-workshop)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 500)
-    (gold-amount >= 500)
-    (building-type-count-total stable < 3)
-    (can-build stable)
-=>
-    (build stable)
-)
-
-; Extra castles on extreme modes
-(defrule
-    (current-age >= castle-age)
-    (stone-amount >= 1000)
-    (building-type-count-total castle < 4)
-    (can-build castle)
-=>
-    (build castle)
-)
-
-; ============================================================
-; PHASE 1.6: STANDBY ARMY (Maintain Ready Garrison When Affordable)
-; ============================================================
-; These rules keep a large standing army when resources are healthy (200-300).
-; They fill the gap between Phase 12 (small baseline) and extreme-mode (500+).
-; The AI won't sit on unspent resources — it builds soldiers proactively.
-
-; --- Feudal: Keep archers + spearmen ready ---
-(defrule
-    (current-age >= feudal-age)
-    (food-amount >= 200)
-    (wood-amount >= 200)
-    (unit-type-count-total archer-line < 15)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (food-amount >= 200)
-    (unit-type-count-total spearman-line < 10)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-; --- Castle: Maintain a strong mixed garrison ---
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 200)
-    (gold-amount >= 200)
-    (unit-type-count-total knight-line < 15)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 200)
-    (wood-amount >= 150)
-    (unit-type-count-total archer-line < 25)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 200)
-    (unit-type-count-total spearman-line < 18)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 200)
-    (wood-amount >= 200)
-    (unit-type-count-total skirmisher-line < 10)
-    (can-train skirmisher-line)
-=>
-    (train skirmisher-line)
-)
-
-; --- Imperial: Keep a massive ready army ---
-(defrule
-    (current-age >= imperial-age)
-    (food-amount >= 200)
-    (gold-amount >= 200)
-    (unit-type-count-total knight-line < 25)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (food-amount >= 200)
-    (wood-amount >= 100)
-    (unit-type-count-total archer-line < 30)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (food-amount >= 200)
-    (unit-type-count-total militiaman-line < 25)
-    (can-train militiaman-line)
-=>
-    (train militiaman-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (food-amount >= 200)
-    (unit-type-count-total spearman-line < 25)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-; --- When entering Castle Age with high resources, immediately rush castle ---
-(defrule
-    (current-age >= castle-age)
-    (stone-amount >= 650)
-    (building-type-count-total castle < 1)
-    (can-build castle)
-=>
-    (build castle)
-    (chat-to-all "ZULFIKAR: Resources are abundant! Building a castle NOW!")
-)
-
-; --- If we have massive stone, build 2nd castle immediately ---
-(defrule
-    (current-age >= castle-age)
-    (stone-amount >= 700)
-    (building-type-count-total castle < 2)
-    (can-build castle)
-=>
-    (build castle)
-    (chat-to-all "ZULFIKAR: Fortress expanding! Second castle going up!")
-)
-
-; --- Under early attack: emergency military production ---
-; CRITICAL: Train military IMMEDIATELY when attacked, regardless of resources
-(defrule
-    (town-under-attack)
-    (unit-type-count-total militiaman-line < 10)
-    (can-train militiaman-line)
-=>
-    (train militiaman-line)
-)
-
-(defrule
-    (town-under-attack)
-    (unit-type-count-total spearman-line < 8)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-(defrule
-    (town-under-attack)
-    (current-age >= feudal-age)
-    (unit-type-count-total archer-line < 10)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-; --- Emergency buildings when attacked ---
-(defrule
-    (town-under-attack)
-    (building-type-count-total barracks < 2)
-    (can-build barracks)
-=>
-    (build barracks)
-)
-
-(defrule
-    (town-under-attack)
-    (current-age >= feudal-age)
-    (building-type-count-total archery-range < 1)
-    (can-build archery-range)
-=>
-    (build archery-range)
-)
-
-; --- Emergency tower when under early attack ---
-(defrule
-    (town-under-attack)
-    (current-age >= feudal-age)
-    (building-type-count-total watch-tower < 3)
-    (can-build watch-tower)
-=>
-    (build watch-tower)
-)
-
-; --- HIGH RESOURCE + UNDER ATTACK = Full Emergency ---
-; When rich AND attacked, train everything at maximum speed
-(defrule
-    (town-under-attack)
-    (food-amount >= 300)
-    (gold-amount >= 200)
-    (unit-type-count-total knight-line < 15)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-(defrule
-    (town-under-attack)
-    (food-amount >= 200)
-    (unit-type-count-total spearman-line < 20)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-(defrule
-    (town-under-attack)
-    (food-amount >= 200)
-    (wood-amount >= 200)
-    (unit-type-count-total archer-line < 20)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 200)
-    (wood-amount >= 200)
-    (unit-type-count-total siege-workshop < 1)
-    (building-type-count-total siege-workshop < 1)
-    (can-build siege-workshop)
-=>
-    (build siege-workshop)
-)
-
-; --- Build multiple Town Centers FAST when rich (Castle Age boom) ---
-(defrule
-    (current-age >= castle-age)
-    (food-amount >= 400)
-    (wood-amount >= 400)
-    (stone-amount >= 200)
-    (building-type-count-total town-center < 3)
+    (building-type-count-total town-center < 1)
     (can-build town-center)
 =>
     (build town-center)
 )
-
 ; ============================================================
-; PHASE 2: VILLAGER PRODUCTION (Zero Idle Time)
+; SECTION 4: MAP SIZE ADAPTATION
+; Adjusts dropsite distances, town size limits, and trade scaling
+; based on map dimensions from Tiny (1v1) to Ludikris.
+; ============================================================
+
+; --- Small Maps (Tiny / Small / 2-3 players) ---
+(defrule
+    (or (map-size tiny)
+        (map-size small))
+=>
+    (set-goal gl-map-size size-small)
+    (set-strategic-number sn-maximum-town-size 22)
+    (set-strategic-number sn-sentry-distance 12)
+    (set-strategic-number sn-defense-distance 14)
+    (disable-self)
+)
+
+; --- Large / Gigantic / Ludikris Maps (Massive Scale) ---
+(defrule
+    (or (map-size large)
+    (or (map-size very-large)
+    (or (map-size huge)
+    (or (map-size gigantic)
+        (map-size ludikris)))))
+=>
+    (set-goal gl-map-size size-large)
+    ; Scale exploration and camps outwards
+    (set-strategic-number sn-camp-max-distance 35)
+    (set-strategic-number sn-lumber-camp-max-distance 45)
+    (set-strategic-number sn-mining-camp-max-distance 45)
+    (set-strategic-number sn-home-exploration-time 450)
+    (disable-self)
+)
+
+; Late-game town size expansion on Large/Ludikris maps to avoid building placement failure
+(defrule
+    (goal gl-map-size size-large)
+    (current-age >= castle-age)
+=>
+    (set-strategic-number sn-maximum-town-size 85)
+    (set-strategic-number sn-safe-town-size 65)
+    (disable-self)
+)
+
+(defrule
+    (goal gl-map-size size-large)
+    (current-age >= imperial-age)
+=>
+    (set-strategic-number sn-maximum-town-size 130)
+    (set-strategic-number sn-safe-town-size 90)
+    (disable-self)
+)
+; ============================================================
+; SECTION 5: COMPLETE 45-CIVILIZATION ARCHETYPE DETECTION
+; Categorizes every civilization in Age of Empires II: Definitive Edition
+; to play its signature tech tree, bonuses, and Castle unique units.
+; ============================================================
+
+; --- Cavalry Civs (Franks, Magyars, Berbers, Lithuanians, Huns, Teutons, Persians, Burgundians, Poles, Bulgarians, Cumans, Georgians) ---
+(defrule
+    (or (civ-selected franks)
+    (or (civ-selected magyar)
+    (or (civ-selected berbers)
+    (or (civ-selected lithuanians)
+    (or (civ-selected hun)
+    (or (civ-selected teutons)
+    (or (civ-selected persians)
+    (or (civ-selected burgundians)
+    (or (civ-selected poles)
+    (or (civ-selected bulgarians)
+    (or (civ-selected cumans)
+        (civ-selected georgians))))))))))))
+=>
+    (set-goal gl-civ-archetype archetype-cavalry)
+    (chat-local-to-self "ZULFIKAR: Archetype -> CAVALRY")
+    (disable-self)
+)
+
+; --- Archer Civs (Britons, Mayans, Ethiopians, Vietnamese, Tatars, Koreans, Italians) ---
+(defrule
+    (or (civ-selected britons)
+    (or (civ-selected mayan)
+    (or (civ-selected ethiopian)
+    (or (civ-selected vietnamese)
+    (or (civ-selected tatars)
+    (or (civ-selected korean)
+        (civ-selected italians)))))))
+=>
+    (set-goal gl-civ-archetype archetype-archer)
+    (chat-local-to-self "ZULFIKAR: Archetype -> ARCHER")
+    (disable-self)
+)
+
+; --- Infantry / Siege Civs (Goths, Celts, Japanese, Romans, Vikings, Slavs, Malians, Armenians) ---
+(defrule
+    (or (civ-selected goths)
+    (or (civ-selected celts)
+    (or (civ-selected japanese)
+    (or (civ-selected romans)
+    (or (civ-selected vikings)
+    (or (civ-selected slav)
+    (or (civ-selected malian)
+        (civ-selected armenians))))))))
+=>
+    (set-goal gl-civ-archetype archetype-infantry)
+    (chat-local-to-self "ZULFIKAR: Archetype -> INFANTRY / SIEGE")
+    (disable-self)
+)
+
+; --- Gunpowder Civs (Turks, Bohemians, Spanish, Portuguese, Hindustanis) ---
+(defrule
+    (or (civ-selected turks)
+    (or (civ-selected bohemians)
+    (or (civ-selected spanish)
+    (or (civ-selected portuguese)
+        (civ-selected hindustanis)))))
+=>
+    (set-goal gl-civ-archetype archetype-gunpowder)
+    (chat-local-to-self "ZULFIKAR: Archetype -> GUNPOWDER")
+    (disable-self)
+)
+
+; --- Mesoamerican Civs (Aztecs, Incas - No Stables! Eagle Warriors) ---
+(defrule
+    (or (civ-selected aztec)
+        (civ-selected incan))
+=>
+    (set-goal gl-civ-archetype archetype-meso)
+    (chat-local-to-self "ZULFIKAR: Archetype -> MESOAMERICAN (Eagle Warriors)")
+    (disable-self)
+)
+
+; --- Camel / Counter Specialists (Saracens, Gurjaras, Berbers) ---
+(defrule
+    (or (civ-selected saracens)
+        (civ-selected gurjaras))
+=>
+    (set-goal gl-civ-archetype archetype-camel)
+    (chat-local-to-self "ZULFIKAR: Archetype -> CAMEL / DYNAMIC COUNTER")
+    (disable-self)
+)
+; ============================================================
+; SECTION 6: DYNAMIC REAL-TIME MACRO (Resource Feedback Loop)
+; Continuously monitors resource inventory and reallocates gatherers
+; dynamically like a human player to eliminate floating resources.
+; ============================================================
+
+; --- Dark Age Baseline: 65% Food, 35% Wood, 0% Gold, 0% Stone ---
+(defrule
+    (current-age <= dark-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 65)
+    (set-strategic-number sn-wood-gatherer-percentage 35)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+)
+
+; --- Feudal Baseline: 45% Food, 38% Wood, 17% Gold, 0% Stone ---
+(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 45)
+    (set-strategic-number sn-wood-gatherer-percentage 38)
+    (set-strategic-number sn-gold-gatherer-percentage 17)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+)
+
+; --- Castle Age Baseline: 40% Food, 30% Wood, 20% Gold, 10% Stone ---
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (building-type-count-total castle >= 1)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 40)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 22)
+    (set-strategic-number sn-stone-gatherer-percentage 8)
+)
+
+; --- Castle Age Stone Surge: Allocate 18% Stone until 1st Castle is built ---
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle < 1)
+    (stone-amount < 650)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 35)
+    (set-strategic-number sn-wood-gatherer-percentage 27)
+    (set-strategic-number sn-gold-gatherer-percentage 20)
+    (set-strategic-number sn-stone-gatherer-percentage 18)
+)
+
+; --- Imperial Age Baseline: 35% Food, 30% Wood, 25% Gold, 10% Stone ---
+(defrule
+    (current-age >= imperial-age)
+    (gold-amount >= 150)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 35)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-stone-gatherer-percentage 10)
+)
+
+; --- DYNAMIC ADJUSTMENT 1: Wood Surplus (>500) -> Shift to Food / Farms ---
+(defrule
+    (current-age >= feudal-age)
+    (wood-amount > 500)
+    (food-amount < 300)
+=>
+    (set-strategic-number sn-wood-gatherer-percentage 25)
+    (set-strategic-number sn-food-gatherer-percentage 55)
+)
+
+; --- DYNAMIC ADJUSTMENT 2: Food Surplus (>1000) & Gold Low (<200) -> Shift to Gold ---
+(defrule
+    (current-age >= castle-age)
+    (food-amount > 1000)
+    (gold-amount < 200)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 25)
+    (set-strategic-number sn-gold-gatherer-percentage 35)
+)
+
+; --- DYNAMIC ADJUSTMENT 3: Gold Surplus (>1200) -> Shift to Food & Wood ---
+(defrule
+    (current-age >= castle-age)
+    (gold-amount > 1200)
+=>
+    (set-strategic-number sn-gold-gatherer-percentage 12)
+    (set-strategic-number sn-food-gatherer-percentage 48)
+    (set-strategic-number sn-wood-gatherer-percentage 40)
+)
+; ============================================================
+; SECTION 7: DARK AGE HUMAN BUILD ORDER (The 21-Pop Standard)
 ; ============================================================
 
 (defrule
@@ -781,40 +614,80 @@
     (train villager)
 )
 
+(defrule
+    (current-age <= dark-age)
+    (housing-headroom < 4)
+    (population-headroom > 0)
+    (not (civ-selected hun))
+    (can-build house)
+=>
+    (build house)
+)
+
+(defrule
+    (current-age <= dark-age)
+    (building-type-count-total lumber-camp < 1)
+    (resource-found wood)
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
+)
+
+(defrule
+    (current-age <= dark-age)
+    (building-type-count-total mill < 1)
+    (unit-type-count-total villager >= 10)
+    (can-build mill)
+=>
+    (build mill)
+)
+
+; Emergency Dark Age farm only if natural food exhausted
+(defrule
+    (current-age <= dark-age)
+    (building-type-count-total mill >= 1)
+    (dropsite-min-distance live-boar > 35)
+    (dropsite-min-distance forage-bush > 25)
+    (building-type-count-total farm < 2)
+    (can-build farm)
+=>
+    (build farm)
+)
+
+; Barracks in late Dark Age (for open maps or non-FC styles)
+(defrule
+    (current-age <= dark-age)
+    (goal gl-map-style style-open)
+    (unit-type-count-total villager >= 19)
+    (building-type-count-total barracks < 1)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+; Loom right before Feudal Age (or emergency)
+(defrule
+    (current-age <= dark-age)
+    (can-research ri-loom)
+    (or (unit-type-count-total villager >= 20)
+        (and (unit-type-count-total villager >= 12)
+             (food-amount < 50)))
+=>
+    (research ri-loom)
+)
+
+(defrule
+    (current-age <= dark-age)
+    (can-research feudal-age)
+=>
+    (research feudal-age)
+    (chat-to-all "ZULFIKAR: Advancing to Feudal Age.")
+)
 ; ============================================================
-; PHASE 3: DIFFICULTY SCALING (Hardest/Extreme Mode Support)
+; SECTION 8: FEUDAL AGE MACRO & MAP-AWARE COMBAT
+; On open maps: early walls & skirmish units.
+; On closed maps: fast Castle Age transition.
 ; ============================================================
-
-; On Hardest/Extreme, AI reaction times are superhuman
-(defrule
-    (difficulty <= hard) ; hard, hardest, extreme
-=>
-    (set-strategic-number sn-enemy-sighted-response-distance 25)
-    (set-strategic-number sn-percent-enemy-sighted-response 100)
-    (set-strategic-number sn-defense-distance 25)
-    (disable-self)
-)
-
-; Hardest/Extreme Resource Trickle (to simulate perfect human APM macro)
-(defrule
-    (difficulty <= hardest) ; hardest, extreme
-    (timer-triggered 5)
-=>
-    (up-cc-add-resource c: wood g: 15)
-    (up-cc-add-resource c: food g: 15)
-    (up-cc-add-resource c: gold g: 15)
-    (up-cc-add-resource c: stone g: 5)
-    (disable-timer 5)
-    (enable-timer 5 30) ; Trickle every 30 seconds
-)
-
-(defrule
-    (difficulty <= hardest)
-    (not (timer-triggered 5))
-=>
-    (enable-timer 5 30)
-    (disable-self)
-)
 
 (defrule
     (current-age >= feudal-age)
@@ -826,64 +699,47 @@
 )
 
 (defrule
-    (current-age >= castle-age)
-    (current-age < imperial-age)
-    (unit-type-count-total villager < gl-castle-age-vils)
-    (can-train villager)
-=>
-    (train villager)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total villager < gl-imperial-age-vils)
-    (can-train villager)
-=>
-    (train villager)
-)
-
-; ============================================================
-; PHASE 3: HOUSE CONSTRUCTION
-; ============================================================
-
-(defrule
+    (current-age >= feudal-age)
+    (current-age < castle-age)
     (housing-headroom < 5)
     (population-headroom > 0)
+    (not (civ-selected hun))
     (can-build house)
 =>
     (build house)
 )
 
-; ============================================================
-; PHASE 4: ECONOMIC BUILDINGS
-; ============================================================
-
-; --- Dark Age Essentials ---
+; Eco upgrades: Double-Bit Axe & Horse Collar immediately
 (defrule
-    (building-type-count-total lumber-camp < 1)
-    (resource-found wood)
-    (can-build lumber-camp)
+    (current-age >= feudal-age)
+    (can-research ri-double-bit-axe)
 =>
-    (build lumber-camp)
+    (research ri-double-bit-axe)
 )
 
 (defrule
-    (building-type-count-total mill < 1)
-    (can-build mill)
+    (current-age >= feudal-age)
+    (can-research ri-horse-collar)
 =>
-    (build mill)
+    (research ri-horse-collar)
 )
 
-; Barracks in Dark Age is REQUIRED as a prerequisite for Feudal Age
 (defrule
-    (current-age <= dark-age)
-    (building-type-count-total barracks < 1)
-    (can-build barracks)
+    (current-age >= feudal-age)
+    (can-research ri-gold-mining)
 =>
-    (build barracks)
+    (research ri-gold-mining)
 )
 
-; --- Additional Economic Buildings (scaling) ---
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total villager >= 34)
+    (building-type-count-total farm >= 10)
+    (can-research ri-wheel-barrow)
+=>
+    (research ri-wheel-barrow)
+)
+
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total lumber-camp < 2)
@@ -893,310 +749,13 @@
     (build lumber-camp)
 )
 
-; --- Stone Mining Camp (prioritize stone early) ---
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total mining-camp < 1)
-    (resource-found stone)
-    (can-build mining-camp)
-=>
-    (build mining-camp)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total mining-camp < 2)
     (resource-found gold)
     (can-build mining-camp)
 =>
     (build mining-camp)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total mining-camp < 3)
-    (resource-found stone)
-    (can-build mining-camp)
-=>
-    (build mining-camp)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total lumber-camp < 3)
-    (resource-found wood)
-    (can-build lumber-camp)
-=>
-    (build lumber-camp)
-)
-
-; ============================================================
-; PHASE 5: FARMS (auto-seed)
-; ============================================================
-
-(defrule
-    (current-age <= dark-age)
-    (building-type-count-total mill > 0)
-    (building-type-count-total farm < 6)
-    (can-build farm)
-=>
-    (build farm)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (current-age < castle-age)
-    (building-type-count-total farm < 14)
-    (can-build farm)
-=>
-    (build farm)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (current-age < imperial-age)
-    (building-type-count-total farm < 28)
-    (can-build farm)
-=>
-    (build farm)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total farm < 40)
-    (can-build farm)
-=>
-    (build farm)
-)
-
-; ============================================================
-; PHASE 4.5: WATER / NAVAL EXPANSION
-; ============================================================
-
-(defrule
-    (current-age <= dark-age)
-    (building-type-count-total dock < 1)
-    (can-build dock)
-=>
-    (build dock)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (building-type-count-total dock < 2)
-    (can-build dock)
-=>
-    (build dock)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total dock < 3)
-    (can-build dock)
-=>
-    (build dock)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total dock < 4)
-    (can-build dock)
-=>
-    (build dock)
-)
-
-(defrule
-    (current-age <= dark-age)
-    (unit-type-count-total fishing-ship < 5)
-    (can-train fishing-ship)
-=>
-    (train fishing-ship)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (unit-type-count-total fishing-ship < 10)
-    (can-train fishing-ship)
-=>
-    (train fishing-ship)
-)
-
-; --- Feudal Age Naval Military ---
-; Using -line names auto-trains best available upgrade (e.g. galley → war galley → galleon)
-(defrule
-    (current-age >= feudal-age)
-    (unit-type-count-total galley-line < 3)
-    (can-train galley-line)
-=>
-    (train galley-line)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (unit-type-count-total fire-ship-line < 3)
-    (can-train fire-ship-line)
-=>
-    (train fire-ship-line)
-)
-
-; --- Castle Age Naval Military ---
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total galley-line < 8)
-    (can-train galley-line)
-=>
-    (train galley-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total fire-ship-line < 5)
-    (can-train fire-ship-line)
-=>
-    (train fire-ship-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total demolition-ship-line < 2)
-    (can-train demolition-ship-line)
-=>
-    (train demolition-ship-line)
-)
-
-; --- Imperial Age Naval Military ---
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total galley-line < 15)
-    (can-train galley-line)
-=>
-    (train galley-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total fire-ship-line < 10)
-    (can-train fire-ship-line)
-=>
-    (train fire-ship-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total demolition-ship-line < 4)
-    (can-train demolition-ship-line)
-=>
-    (train demolition-ship-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total cannon-galleon < 3)
-    (can-train cannon-galleon)
-=>
-    (train cannon-galleon)
-)
-
-
-; ============================================================
-; PHASE 6: AGE TRANSITIONS
-; ============================================================
-
-(defrule
-    (can-research feudal-age)
-=>
-    (research feudal-age)
-    (chat-to-all "ZULFIKAR: Advancing to Feudal Age...")
-)
-
-(defrule
-    (can-research castle-age)
-=>
-    (research castle-age)
-    (chat-to-all "ZULFIKAR: Advancing to Castle Age...")
-)
-
-(defrule
-    (can-research imperial-age)
-=>
-    (research imperial-age)
-    (chat-to-all "ZULFIKAR: Advancing to Imperial Age...")
-)
-
-; ============================================================
-; PHASE 7: RESOURCE ALLOCATION PER AGE
-; ============================================================
-
-; --- Prioritize stone collection when low and walls/castles needed ---
-(defrule
-    (current-age >= castle-age)
-    (stone-amount < 200)
-    (resource-found stone)
-=>
-    (set-strategic-number sn-food-gatherer-percentage 25)
-    (set-strategic-number sn-wood-gatherer-percentage 15)
-    (set-strategic-number sn-gold-gatherer-percentage 20)
-    (set-strategic-number sn-stone-gatherer-percentage 40)
-)
-
-; --- Dynamic resource allocation (continuously adjusts, no disable-self) ---
-(defrule
-    (current-age >= feudal-age)
-    (current-age < castle-age)
-=>
-    (set-strategic-number sn-food-gatherer-percentage 40)
-    (set-strategic-number sn-wood-gatherer-percentage 30)
-    (set-strategic-number sn-gold-gatherer-percentage 15)
-    (set-strategic-number sn-stone-gatherer-percentage 15)
-    (set-strategic-number sn-maximum-town-size 30)
-    (set-strategic-number sn-sentry-distance 30)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (current-age < imperial-age)
-=>
-    (set-strategic-number sn-food-gatherer-percentage 30)
-    (set-strategic-number sn-wood-gatherer-percentage 20)
-    (set-strategic-number sn-gold-gatherer-percentage 30)
-    (set-strategic-number sn-stone-gatherer-percentage 20)
-    (set-strategic-number sn-maximum-town-size 50)
-    (set-strategic-number sn-sentry-distance 50)
-)
-
-(defrule
-    (current-age >= imperial-age)
-=>
-    (set-strategic-number sn-food-gatherer-percentage 30)
-    (set-strategic-number sn-wood-gatherer-percentage 20)
-    (set-strategic-number sn-gold-gatherer-percentage 35)
-    (set-strategic-number sn-stone-gatherer-percentage 15)
-    (set-strategic-number sn-maximum-town-size 80)
-    (set-strategic-number sn-sentry-distance 80)
-)
-
-; --- When under attack shift more to military resources ---
-(defrule
-    (town-under-attack)
-    (current-age >= castle-age)
-=>
-    (set-strategic-number sn-food-gatherer-percentage 35)
-    (set-strategic-number sn-wood-gatherer-percentage 15)
-    (set-strategic-number sn-gold-gatherer-percentage 40)
-    (set-strategic-number sn-stone-gatherer-percentage 10)
-)
-
-; ============================================================
-; PHASE 8: MILITARY BUILDINGS
-; ============================================================
-
-; --- Feudal Age ---
-(defrule
-    (current-age >= feudal-age)
-    (building-type-count-total archery-range < 1)
-    (can-build archery-range)
-=>
-    (build archery-range)
 )
 
 (defrule
@@ -1209,64 +768,57 @@
 
 (defrule
     (current-age >= feudal-age)
-    (building-type-count-total archery-range < 2)
-    (can-build archery-range)
+    (building-type-count-total market < 1)
+    (building-type-count-total blacksmith >= 1)
+    (can-build market)
 =>
-    (build archery-range)
+    (build market)
 )
 
 (defrule
     (current-age >= feudal-age)
-    (building-type-count-total barracks < 2)
-    (can-build barracks)
+    (current-age < castle-age)
+    (wood-amount >= 80)
+    (building-type-count-total farm < 16)
+    (can-build farm)
 =>
-    (build barracks)
+    (build farm)
 )
 
-; --- Castle Age ---
+; On Open Maps: Build palisade walls to woodlines & defensive tower if attacked
 (defrule
-    (current-age >= castle-age)
-    (building-type-count-total archery-range < 3)
-    (can-build archery-range)
+    (goal gl-map-style style-open)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (wood-amount >= 140)
+    (can-build-wall 1 palisade-wall)
 =>
-    (build archery-range)
+    (enable-wall-placement 1)
+    (build-wall 1 palisade-wall)
 )
 
-; --- Feudal Age: Build stable for scouts/knights ---
+(defrule
+    (goal gl-map-style style-open)
+    (current-age >= feudal-age)
+    (town-under-attack)
+    (building-type-count-total watch-tower < 2)
+    (stone-amount >= 125)
+    (can-build watch-tower)
+=>
+    (build watch-tower)
+)
+
 (defrule
     (current-age >= feudal-age)
-    (building-type-count-total stable < 1)
-    (can-build stable)
+    (can-research castle-age)
 =>
-    (build stable)
+    (research castle-age)
+    (chat-to-all "ZULFIKAR: Advancing to Castle Age.")
 )
+; ============================================================
+; SECTION 9: CASTLE AGE 3-TC BOOM & FORTRESS CITY
+; ============================================================
 
-; --- Castle Age: 2nd stable for faster knight production ---
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total stable < 2)
-    (can-build stable)
-=>
-    (build stable)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total siege-workshop < 1)
-    (can-build siege-workshop)
-=>
-    (build siege-workshop)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total university < 1)
-    (can-build university)
-=>
-    (build university)
-)
-
-; --- Additional Town Centers (Economic Boom) ---
 (defrule
     (current-age >= castle-age)
     (building-type-count-total town-center < 2)
@@ -1284,1018 +836,221 @@
 )
 
 (defrule
-    (current-age >= imperial-age)
-    (building-type-count-total town-center < 4)
-    (can-build town-center)
-=>
-    (build town-center)
-)
-
-; --- Imperial Age ---
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total barracks < 4)
-    (can-build barracks)
-=>
-    (build barracks)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total archery-range < 5)
-    (can-build archery-range)
-=>
-    (build archery-range)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total stable < 2)
-    (can-build stable)
-=>
-    (build stable)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total siege-workshop < 2)
-    (can-build siege-workshop)
-=>
-    (build siege-workshop)
-)
-
-; ============================================================
-; PHASE 9: BEAUTIFUL FORTRESS - DOUBLE STONE WALLS
-; ============================================================
-
-; In Castle Age, we begin our massive stone fortification.
-; We use Perimeter 1 (Inner) and Perimeter 2 (Outer) to create a double stone wall with a gap.
-; If the map layout forces them together, the engine naturally merges them into a single double-thick wall.
-
-; --- Island Map Detection & Coastal Wall Push ---
-; If on an island, temporarily expand town size to maximum (255) so the wall builder reaches the coastline
-(defrule
     (current-age >= castle-age)
-    (or (map-type islands) (map-type team-islands))
+    (current-age < imperial-age)
+    (unit-type-count-total villager < gl-castle-age-vils)
+    (can-train villager)
 =>
-    (set-strategic-number sn-maximum-town-size 255) ; Push walls to the sea
-    (enable-wall-placement 1)
-    (enable-wall-placement 2)
-    (chat-to-all "ZULFIKAR: Securing island coastline with double fortifications...")
-    (disable-self)
-)
-
-; --- Standard Land Map Wall Push ---
-(defrule
-    (current-age >= castle-age)
-    (not (map-type islands))
-    (not (map-type team-islands))
-=>
-    (enable-wall-placement 1)
-    (enable-wall-placement 2)
-    (chat-to-all "ZULFIKAR: Commencing double stone wall fortifications...")
-    (disable-self)
-)
-
-; --- Restore Economic Stability ---
-; After wall placement is locked in, drop the town size back down so villagers don't scatter
-(defrule
-    (current-age >= castle-age)
-    (or (map-type islands) (map-type team-islands))
-    (strategic-number sn-maximum-town-size == 255)
-=>
-    (set-strategic-number sn-maximum-town-size 45) ; Keep eco tight, walls stay on coast
-    (set-strategic-number sn-camp-max-distance 30)
-)
-
-; --- Perimeter 1 (Inner Stone Wall) ---
-(defrule
-    (current-age >= castle-age)
-    (stone-amount > 150)
-    (can-build-wall 1 stone-wall)
-=>
-    (set-strategic-number sn-gate-type-for-wall 1)
-    (build-wall 1 stone-wall)
-)
-
-; Build stone gate at inner perimeter (1 gate only for trade route)
-(defrule
-    (current-age >= castle-age)
-    (stone-amount > 150)
-    (building-type-count-total gate < 1)
-    (can-build-gate 1)
-=>
-    (set-strategic-number sn-gate-type-for-wall 1)
-    (build-gate 1)
-)
-
-; --- Perimeter 2 (Outer Stone Wall) ---
-(defrule
-    (current-age >= castle-age)
-    (stone-amount > 150)
-    (can-build-wall 2 stone-wall)
-=>
-    (set-strategic-number sn-gate-type-for-wall 1)
-    (build-wall 2 stone-wall)
-)
-
-; Build stone gate at outer perimeter (1 gate only)
-(defrule
-    (current-age >= castle-age)
-    (stone-amount > 150)
-    (building-type-count-total gate < 2)
-    (can-build-gate 2)
-=>
-    (set-strategic-number sn-gate-type-for-wall 1)
-    (build-gate 2)
-)
-
-; --- Towers (Only build when economy is stable) ---
-(defrule
-    (current-age >= feudal-age)
-    (building-type-count-total watch-tower < 6)
-    (wood-amount > 200)
-    (stone-amount > 150)
-    (can-build watch-tower)
-=>
-    (build watch-tower)
+    (train villager)
 )
 
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total watch-tower < 12)
-    (wood-amount > 250)
-    (stone-amount > 200)
-    (can-build watch-tower)
+    (housing-headroom < 8)
+    (population-headroom > 0)
+    (not (civ-selected hun))
+    (can-build house)
 =>
-    (build watch-tower)
+    (build house)
 )
 
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total watch-tower < 20)
-    (wood-amount > 300)
-    (stone-amount > 250)
-    (can-build watch-tower)
-=>
-    (build watch-tower)
-)
-
-; --- Bombard Towers (Ultimate plugging, high cost) ---
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total bombard-tower < 10)
-    (stone-amount > 300)
-    (gold-amount > 300)
-    (can-build bombard-tower)
-=>
-    (build bombard-tower)
-)
-
-; --- Castles (PRIORITY: Build ASAP for defense and unique units) ---
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total castle < 1)
-    (can-build castle)
-=>
-    (build castle)
-    (chat-to-all "ZULFIKAR: First castle rising! The fortress stands!")
-)
-
-; 2nd castle with lower threshold (was 700, now 200)
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total castle < 2)
-    (stone-amount > 200)
-    (can-build castle)
-=>
-    (build castle)
-)
-
-; 3rd castle
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total castle < 3)
-    (stone-amount > 350)
-    (can-build castle)
-=>
-    (build castle)
-)
-
-; 4th-6th castles in Imperial
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total castle < 6)
-    (stone-amount > 400)
-    (can-build castle)
-=>
-    (build castle)
-)
-
-; --- Additional Town Centers (boom economy) ---
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total town-center < 3)
-    (can-build town-center)
-=>
-    (build town-center)
-)
-
-; ============================================================
-; PHASE 10: ECONOMIC UPGRADES
-; ============================================================
-
-; --- Town Center (Crucial Villager Efficiency) ---
-(defrule
-    (can-research ri-wheelbarrow)
-=>
-    (research ri-wheelbarrow)
-)
-
-(defrule
-    (can-research ri-hand-cart)
-=>
-    (research ri-hand-cart)
-)
-
-; --- Lumber ---
-(defrule
-    (can-research ri-double-bit-axe)
-=>
-    (research ri-double-bit-axe)
-)
-
-(defrule
     (can-research ri-bow-saw)
 =>
     (research ri-bow-saw)
 )
 
 (defrule
-    (can-research ri-two-man-saw)
+    (current-age >= castle-age)
+    (can-research ri-heavy-plow)
 =>
-    (research ri-two-man-saw)
-)
-
-; --- Farming ---
-(defrule
-    (can-research ri-horsecollar)
-=>
-    (research ri-horsecollar)
+    (research ri-heavy-plow)
 )
 
 (defrule
-    (can-research ri-heavyplow)
+    (current-age >= castle-age)
+    (can-research ri-gold-shaft-mining)
 =>
-    (research ri-heavyplow)
+    (research ri-gold-shaft-mining)
 )
 
 (defrule
-    (can-research ri-croprotation)
+    (current-age >= castle-age)
+    (can-research ri-stone-mining)
 =>
-    (research ri-croprotation)
-)
-
-; --- Gold Mining ---
-(defrule
-    (can-research ri-goldmining)
-=>
-    (research ri-goldmining)
+    (research ri-stone-mining)
 )
 
 (defrule
-    (can-research ri-goldshaftmining)
+    (current-age >= castle-age)
+    (can-research ri-hand-cart)
 =>
-    (research ri-goldshaftmining)
-)
-
-; --- Stone Mining ---
-(defrule
-    (can-research ri-stonemining)
-=>
-    (research ri-stonemining)
+    (research ri-hand-cart)
 )
 
 (defrule
-    (can-research ri-stoneshaftmining)
+    (current-age >= castle-age)
+    (building-type-count-total mining-camp < 2)
+    (resource-found stone)
+    (can-build mining-camp)
 =>
-    (research ri-stoneshaftmining)
-)
-
-; --- Loom (delayed until food is low or boar hunting) ---
-(defrule
-    (can-research ri-loom)
-    (or (food-amount < 50)
-        (or (current-age >= feudal-age)
-            (unit-type-count-total villager >= 8)))
-=>
-    (research ri-loom)
-)
-
-; ============================================================
-; PHASE 11: MILITARY UPGRADES (Full Tech Tree)
-; ============================================================
-
-; --- Archery Range Unit Upgrades ---
-(defrule
-    (can-research ri-crossbow)
-=>
-    (research ri-crossbow)
+    (build mining-camp)
 )
 
 (defrule
-    (can-research ri-elite-skirmisher)
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (wood-amount >= 75)
+    (building-type-count-total farm < 34)
+    (can-build farm)
 =>
-    (research ri-elite-skirmisher)
+    (build farm)
+)
+
+; Castles: 1st Citadel at 650 stone, 2nd expansion castle
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle < 1)
+    (can-build castle)
+=>
+    (build castle)
+    (chat-to-all "ZULFIKAR: The Citadel rises! Fortress established.")
 )
 
 (defrule
-    (can-research ri-arbalest)
+    (current-age >= castle-age)
+    (building-type-count-total castle < 2)
+    (stone-amount >= 650)
+    (can-build castle)
 =>
-    (research ri-arbalest)
+    (build castle)
+    (chat-to-all "ZULFIKAR: Fortress expanding. Second Castle founded.")
+)
+
+; Stone Walls with 3-4 Stone Gates (multi-gate perimeter, no bottleneck!)
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle >= 1)
+    (stone-amount >= 150)
+    (can-build-wall 1 stone-wall)
+=>
+    (set-strategic-number sn-gate-type-for-wall 1)
+    (enable-wall-placement 1)
+    (build-wall 1 stone-wall)
 )
 
 (defrule
-    (can-research ri-thumb-ring)
+    (current-age >= castle-age)
+    (building-type-count-total gate < 4)
+    (stone-amount >= 100)
+    (can-build-gate 1)
 =>
-    (research ri-thumb-ring)
+    (set-strategic-number sn-gate-type-for-wall 1)
+    (build-gate 1)
+)
+
+; University & Tower Defense
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total university < 1)
+    (can-build university)
+=>
+    (build university)
 )
 
 (defrule
-    (can-research ri-parthian-tactics)
-=>
-    (research ri-parthian-tactics)
-)
-
-; --- Barracks Unit Upgrades ---
-(defrule
-    (can-research ri-man-at-arms)
-=>
-    (research ri-man-at-arms)
-)
-
-(defrule
-    (can-research ri-long-swordsman)
-=>
-    (research ri-long-swordsman)
-)
-
-(defrule
-    (can-research ri-pikeman)
-=>
-    (research ri-pikeman)
-)
-
-(defrule
-    (can-research ri-two-handed-swordsman)
-=>
-    (research ri-two-handed-swordsman)
-)
-
-(defrule
-    (can-research ri-champion)
-=>
-    (research ri-champion)
-)
-
-(defrule
-    (can-research ri-halberdier)
-=>
-    (research ri-halberdier)
-)
-
-(defrule
-    (can-research ri-supplies)
-=>
-    (research ri-supplies)
-)
-
-(defrule
-    (can-research ri-gambesons)
-=>
-    (research ri-gambesons)
-)
-
-(defrule
-    (can-research ri-squires)
-=>
-    (research ri-squires)
-)
-
-(defrule
-    (can-research ri-arson)
-=>
-    (research ri-arson)
-)
-
-; --- Blacksmith (Fletching is Highest Priority) ---
-(defrule
-    (can-research ri-fletching)
-=>
-    (research ri-fletching)
-)
-
-(defrule
-    (can-research ri-bodkin-arrow)
-=>
-    (research ri-bodkin-arrow)
-)
-
-(defrule
-    (can-research ri-bracer)
-=>
-    (research ri-bracer)
-)
-
-(defrule
-    (up-research-status c: ri-fletching < research-complete)
-    (up-research-status c: ri-fletching != research-pending)
-    (can-research ri-fletching) ; Backup check
-=>
-    (up-jump-rule 11) ; Skip all other blacksmith tech until Fletching is researching/done
-)
-
-(defrule
-    (can-research ri-padded-archer-armor)
-=>
-    (research ri-padded-archer-armor)
-)
-
-(defrule
-    (can-research ri-leather-archer-armor)
-=>
-    (research ri-leather-archer-armor)
-)
-
-(defrule
-    (can-research ri-ring-archer-armor)
-=>
-    (research ri-ring-archer-armor)
-)
-
-; --- Blacksmith (Melee Attack + Infantry Armor) ---
-(defrule
-    (can-research ri-forging)
-=>
-    (research ri-forging)
-)
-
-(defrule
-    (can-research ri-iron-casting)
-=>
-    (research ri-iron-casting)
-)
-
-(defrule
-    (can-research ri-blast-furnace)
-=>
-    (research ri-blast-furnace)
-)
-
-(defrule
-    (can-research ri-scale-mail)
-=>
-    (research ri-scale-mail)
-)
-
-(defrule
-    (can-research ri-chain-mail)
-=>
-    (research ri-chain-mail)
-)
-
-(defrule
-    (can-research ri-plate-mail)
-=>
-    (research ri-plate-mail)
-)
-
-; --- Blacksmith (Cavalry Barding Armor) ---
-(defrule
-    (can-research ri-scale-barding)
-=>
-    (research ri-scale-barding)
-)
-
-(defrule
-    (can-research ri-chain-barding)
-=>
-    (research ri-chain-barding)
-)
-
-(defrule
-    (can-research ri-plate-barding)
-=>
-    (research ri-plate-barding)
-)
-
-; --- Stable Upgrades ---
-(defrule
-    (can-research ri-bloodlines)
-=>
-    (research ri-bloodlines)
-)
-
-(defrule
-    (can-research ri-husbandry)
-=>
-    (research ri-husbandry)
-)
-
-(defrule
-    (can-research ri-light-cavalry)
-=>
-    (research ri-light-cavalry)
-)
-
-(defrule
-    (can-research ri-cavalier)
-=>
-    (research ri-cavalier)
-)
-
-(defrule
-    (can-research ri-hussar)
-=>
-    (research ri-hussar)
-)
-
-(defrule
-    (can-research ri-paladin)
-=>
-    (research ri-paladin)
-)
-
-; --- University (Defensive & Utility) ---
-(defrule
+    (current-age >= castle-age)
     (can-research ri-ballistics)
 =>
     (research ri-ballistics)
 )
 
 (defrule
-    (can-research ri-guard-tower)
-=>
-    (research ri-guard-tower)
-)
-
-(defrule
-    (can-research ri-keep)
-=>
-    (research ri-keep)
-)
-
-(defrule
-    (can-research ri-bombard-tower)
-=>
-    (research ri-bombard-tower)
-)
-
-(defrule
-    (can-research ri-masonry)
-=>
-    (research ri-masonry)
-)
-
-(defrule
-    (can-research ri-architecture)
-=>
-    (research ri-architecture)
-)
-
-(defrule
+    (current-age >= castle-age)
     (can-research ri-murder-holes)
 =>
     (research ri-murder-holes)
 )
 
 (defrule
-    (can-research ri-heated-shot)
+    (current-age >= castle-age)
+    (can-research ri-guard-tower)
 =>
-    (research ri-heated-shot)
+    (research ri-guard-tower)
 )
 
 (defrule
-    (can-research ri-arrowslits)
+    (current-age >= castle-age)
+    (can-research ri-masonry)
 =>
-    (research ri-arrowslits)
+    (research ri-masonry)
 )
 
 (defrule
-    (can-research ri-fortified-wall)
+    (current-age >= castle-age)
+    (building-type-count-total watch-tower < 6)
+    (building-type-count-total castle >= 1)
+    (stone-amount >= 200)
+    (can-build watch-tower)
 =>
-    (research ri-fortified-wall)
+    (build watch-tower)
+)
+
+; Monastery & Relic Hunting
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total monastery < 1)
+    (can-build monastery)
+=>
+    (build monastery)
 )
 
 (defrule
-    (can-research ri-treadmill-crane)
+    (current-age >= castle-age)
+    (unit-type-count-total monk < 4)
+    (can-train monk)
 =>
-    (research ri-treadmill-crane)
+    (train monk)
 )
 
 (defrule
-    (can-research ri-chemistry)
+    (current-age >= castle-age)
 =>
-    (research ri-chemistry)
+    (set-strategic-number sn-relic-return-distance 200)
+    (disable-self)
 )
 
 (defrule
-    (can-research ri-siege-engineers)
-=>
-    (research ri-siege-engineers)
-)
-
-; --- Monastery Upgrades ---
-(defrule
+    (current-age >= castle-age)
     (can-research ri-sanctity)
 =>
     (research ri-sanctity)
 )
 
 (defrule
+    (current-age >= castle-age)
     (can-research ri-fervor)
 =>
     (research ri-fervor)
 )
 
 (defrule
+    (current-age >= castle-age)
     (can-research ri-redemption)
 =>
     (research ri-redemption)
 )
 
-(defrule
-    (can-research ri-atonement)
-=>
-    (research ri-atonement)
-)
-
-(defrule
-    (can-research ri-devotion)
-=>
-    (research ri-devotion)
-)
-
-(defrule
-    (can-research ri-block-printing)
-=>
-    (research ri-block-printing)
-)
-
-(defrule
-    (can-research ri-faith)
-=>
-    (research ri-faith)
-)
-
-(defrule
-    (can-research ri-illumination)
-=>
-    (research ri-illumination)
-)
-
-(defrule
-    (can-research ri-theocracy)
-=>
-    (research ri-theocracy)
-)
-
-; --- Market Upgrades ---
-(defrule
-    (can-research ri-coinage)
-=>
-    (research ri-coinage)
-)
-
-(defrule
-    (can-research ri-caravan)
-=>
-    (research ri-caravan)
-)
-
-(defrule
-    (can-research ri-banking)
-=>
-    (research ri-banking)
-)
-
-(defrule
-    (can-research ri-guilds)
-=>
-    (research ri-guilds)
-)
-
-; --- Siege Workshop Upgrades ---
-(defrule
-    (can-research ri-capped-ram)
-=>
-    (research ri-capped-ram)
-)
-
-(defrule
-    (can-research ri-onager)
-=>
-    (research ri-onager)
-)
-
-(defrule
-    (can-research ri-heavy-scorpion)
-=>
-    (research ri-heavy-scorpion)
-)
-
-; --- Town Center (Visibility) ---
-(defrule
-    (can-research ri-town-watch)
-=>
-    (research ri-town-watch)
-)
-
-(defrule
-    (can-research ri-town-patrol)
-=>
-    (research ri-town-patrol)
-)
-
-; --- Castle Upgrades ---
-(defrule
-    (can-research ri-conscription)
-=>
-    (research ri-conscription)
-)
-
-(defrule
-    (can-research ri-hoardings)
-=>
-    (research ri-hoardings)
-)
-
-(defrule
-    (can-research ri-sappers)
-=>
-    (research ri-sappers)
-)
-
-; --- Dock (Naval Upgrades - ALL in one place) ---
-; Ship line upgrade chain: Galley -> War Galley -> Galleon
-(defrule
-    (current-age >= feudal-age)
-    (building-type-count-total dock >= 1)
-    (can-research ri-war-galley)
-=>
-    (research ri-war-galley)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total dock >= 1)
-    (can-research ri-galleon)
-=>
-    (research ri-galleon)
-)
-
-; Fire Ship upgrade: Fire Ship -> Fast Fire Ship
+; Siege Workshop
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total dock >= 1)
-    (can-research ri-fast-fire-ship)
+    (building-type-count-total siege-workshop < 1)
+    (can-build siege-workshop)
 =>
-    (research ri-fast-fire-ship)
+    (build siege-workshop)
 )
 
-; Demo Ship upgrade: Demolition Ship -> Heavy Demolition Ship
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total dock >= 1)
-    (can-research ri-heavy-demolition-ship)
-=>
-    (research ri-heavy-demolition-ship)
-)
-
-; Cannon Galleon upgrade
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total dock >= 1)
-    (can-research ri-elite-cannon-galleon)
-=>
-    (research ri-elite-cannon-galleon)
-)
-
-; Ship economy & speed upgrades
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total dock >= 1)
-    (can-research ri-careening)
-=>
-    (research ri-careening)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total dock >= 1)
-    (can-research ri-dry-dock)
-=>
-    (research ri-dry-dock)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total dock >= 1)
-    (can-research ri-shipwright)
-=>
-    (research ri-shipwright)
-)
-
-; ============================================================
-; PHASE 12: MILITARY PRODUCTION (Strong From the Start)
-; ============================================================
-
-; --- Dark Age: Build barracks ASAP and start training ---
-(defrule
-    (current-age <= feudal-age)
-    (building-type-count-total barracks < 1)
-    (can-build barracks)
-=>
-    (build barracks)
-)
-
-(defrule
-    (current-age <= feudal-age)
-    (unit-type-count-total militiaman-line < 3)
-    (can-train militiaman-line)
-=>
-    (train militiaman-line)
-)
-
-; --- Scout Cavalry: Train scouts throughout early game ---
-(defrule
-    (current-age <= feudal-age)
-    (unit-type-count-total scout-cavalry-line < 1)
-    (can-train scout-cavalry-line)
-=>
-    (train scout-cavalry-line)
-)
-
-; --- Feudal: Train scouts aggressively ---
-(defrule
-    (current-age <= castle-age)
-    (unit-type-count-total scout-cavalry-line < 5)
-    (can-train scout-cavalry-line)
-=>
-    (train scout-cavalry-line)
-)
-
-; --- EMERGENCY: Train militia immediately if attacked in Dark/Feudal ---
-(defrule
-    (town-under-attack)
-    (current-age < castle-age)
-    (unit-type-count-total militiaman-line < 8)
-    (can-train militiaman-line)
-=>
-    (train militiaman-line)
-)
-
-; --- Archers: PRIMARY unit (Feudal: 10, Castle: 20) ---
-(defrule
-    (current-age >= feudal-age)
-    (current-age < castle-age)
-    (unit-type-count-total archer-line < 10)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-; --- Spearmen: SECOND priority, anti-cavalry defense ---
-(defrule
-    (current-age >= feudal-age)
-    (unit-type-count-total spearman-line < 8)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-; --- Skirmishers: supplemental ranged defense (Feudal only, max 5) ---
-(defrule
-    (current-age >= feudal-age)
-    (current-age < castle-age)
-    (unit-type-count-total skirmisher-line < 5)
-    (can-train skirmisher-line)
-=>
-    (train skirmisher-line)
-)
-
-; --- GUARANTEED MINIMUM ARMY (no resource check — always maintain these) ---
-; CAVALRY FIRST: These rules fire with top priority to ensure mounted units.
-(defrule
-    (current-age >= feudal-age)
-    (unit-type-count-total scout-cavalry-line < 3)
-    (can-train scout-cavalry-line)
-=>
-    (train scout-cavalry-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total knight-line < 10)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total scout-cavalry-line < 8)
-    (can-train scout-cavalry-line)
-=>
-    (train scout-cavalry-line)
-)
-
-; Infantry & ranged minimum
-(defrule
-    (current-age >= feudal-age)
-    (unit-type-count-total archer-line < 5)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-(defrule
-    (current-age >= feudal-age)
-    (unit-type-count-total spearman-line < 5)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-; --- Castle Age: Scale up the core army fast ---
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total archer-line < 20)
-    (can-train archer-line)
-=>
-    (train archer-line)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total spearman-line < 12)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-; --- Light Cavalry / Hussars: zero-gold raiding & meatshield ---
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total scout-cavalry-line < 10)
-    (can-train scout-cavalry-line)
-=>
-    (train scout-cavalry-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total scout-cavalry-line < 20)
-    (can-train scout-cavalry-line)
-=>
-    (train scout-cavalry-line)
-)
-
-; --- Cavalry Archers: mobile ranged DPS (small group only, focus on core army) ---
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total cavalry-archer-line < 5)
-    (can-train cavalry-archer-line)
-=>
-    (train cavalry-archer-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total cavalry-archer-line < 10)
-    (can-train cavalry-archer-line)
-=>
-    (train cavalry-archer-line)
-)
-
-; --- Knights: mobile counter-attack force ---
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total knight-line < 10)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total knight-line < 20)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-; --- Mangonels / Onagers: area denial (SMALL numbers, expensive) ---
 (defrule
     (current-age >= castle-age)
     (unit-type-count-total mangonel-line < 2)
@@ -2305,24 +1060,6 @@
 )
 
 (defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total mangonel-line < 4)
-    (can-train mangonel-line)
-=>
-    (train mangonel-line)
-)
-
-; --- Scorpions: only in Imperial, small support group ---
-(defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total scorpion-line < 4)
-    (can-train scorpion-line)
-=>
-    (train scorpion-line)
-)
-
-; --- Battering Rams: siege for retaliatory strikes (max 2) ---
-(defrule
     (current-age >= castle-age)
     (unit-type-count-total battering-ram-line < 2)
     (can-train battering-ram-line)
@@ -2330,281 +1067,717 @@
     (train battering-ram-line)
 )
 
-; --- Trebuchets: essential push unit (max 3) ---
+(defrule
+    (current-age >= castle-age)
+    (can-research imperial-age)
+=>
+    (research imperial-age)
+    (chat-to-all "ZULFIKAR: Advancing to Imperial Age.")
+)
+; ============================================================
+; SECTION 10: IMPERIAL AGE DOMINANCE & UNIQUE UNITS
+; ============================================================
+
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total trebuchet < 3)
+    (building-type-count-total town-center < 4)
+    (can-build town-center)
+=>
+    (build town-center)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total villager < gl-imperial-age-vils)
+    (can-train villager)
+=>
+    (train villager)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (wood-amount >= 75)
+    (building-type-count-total farm < 46)
+    (can-build farm)
+=>
+    (build farm)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-two-man-saw)
+=>
+    (research ri-two-man-saw)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-crop-rotation)
+=>
+    (research ri-crop-rotation)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-stone-shaft-mining)
+=>
+    (research ri-stone-shaft-mining)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total castle < 4)
+    (stone-amount >= 650)
+    (can-build castle)
+=>
+    (build castle)
+)
+
+; Trebuchets & Bombard Cannons
+(defrule
+    (current-age >= imperial-age)
+    (unit-type-count-total trebuchet < 4)
     (can-train trebuchet)
 =>
     (train trebuchet)
 )
 
-; --- Bombard Cannons: powerful but expensive (max 2) ---
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total bombard-cannon < 2)
+    (unit-type-count-total bombard-cannon < 3)
     (can-train bombard-cannon)
 =>
     (train bombard-cannon)
 )
 
-; --- Champion: beefy front-line defense ---
 (defrule
     (current-age >= imperial-age)
-    (unit-type-count-total militiaman-line < 20)
+    (building-type-count-total siege-workshop < 3)
+    (can-build siege-workshop)
+=>
+    (build siege-workshop)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-chemistry)
+=>
+    (research ri-chemistry)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-siege-engineers)
+=>
+    (research ri-siege-engineers)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-conscription)
+=>
+    (research ri-conscription)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-keep)
+=>
+    (research ri-keep)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-bombard-tower)
+=>
+    (research ri-bombard-tower)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-architecture)
+=>
+    (research ri-architecture)
+)
+
+; Universal Unique Unit Training at Castle (all civs)
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle >= 1)
+    (unit-type-count-total my-unique-unit-line < 15)
+    (can-train my-unique-unit-line)
+=>
+    (train my-unique-unit-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (building-type-count-total castle >= 1)
+    (unit-type-count-total my-unique-unit-line < 25)
+    (can-train my-unique-unit-line)
+=>
+    (train my-unique-unit-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research my-unique-unit-upgrade)
+=>
+    (research my-unique-unit-upgrade)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (can-research my-castle-unique-research)
+=>
+    (research my-castle-unique-research)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research my-unique-research)
+=>
+    (research my-unique-research)
+)
+; ============================================================
+; SECTION 11: CIVILIZATION-AWARE MILITARY COMPOSITIONS
+; ============================================================
+
+; --- CAVALRY CIVILIZATIONS ---
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (current-age >= feudal-age)
+    (building-type-count-total stable < 1)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (current-age >= castle-age)
+    (building-type-count-total stable < 3)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (current-age >= imperial-age)
+    (building-type-count-total stable < 5)
+    (can-build stable)
+=>
+    (build stable)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (unit-type-count-total scout-cavalry-line < 5)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (current-age >= castle-age)
+    (unit-type-count-total knight-line < 20)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (current-age >= imperial-age)
+    (unit-type-count-total knight-line < 30)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (current-age >= imperial-age)
+    (unit-type-count-total scout-cavalry-line < 15)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-scale-barding)
+=>
+    (research ri-scale-barding)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-bloodlines)
+=>
+    (research ri-bloodlines)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-chain-barding)
+=>
+    (research ri-chain-barding)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-iron-casting)
+=>
+    (research ri-iron-casting)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-husbandry)
+=>
+    (research ri-husbandry)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-plate-barding)
+=>
+    (research ri-plate-barding)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-blast-furnace)
+=>
+    (research ri-blast-furnace)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-cavalier)
+=>
+    (research ri-cavalier)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-paladin)
+=>
+    (research ri-paladin)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-light-cavalry)
+=>
+    (research ri-light-cavalry)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-cavalry)
+    (can-research ri-hussar)
+=>
+    (research ri-hussar)
+)
+
+; --- ARCHER CIVILIZATIONS ---
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (current-age >= feudal-age)
+    (building-type-count-total archery-range < 2)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (current-age >= castle-age)
+    (building-type-count-total archery-range < 3)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (current-age >= imperial-age)
+    (building-type-count-total archery-range < 5)
+    (can-build archery-range)
+=>
+    (build archery-range)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (unit-type-count-total archer-line < 12)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (current-age >= castle-age)
+    (unit-type-count-total archer-line < 25)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (current-age >= imperial-age)
+    (unit-type-count-total archer-line < 35)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-fletching)
+=>
+    (research ri-fletching)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-padded-archer-armor)
+=>
+    (research ri-padded-archer-armor)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-crossbow)
+=>
+    (research ri-crossbow)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-bodkin-arrow)
+=>
+    (research ri-bodkin-arrow)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-leather-archer-armor)
+=>
+    (research ri-leather-archer-armor)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-thumb-ring)
+=>
+    (research ri-thumb-ring)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-arbalest)
+=>
+    (research ri-arbalest)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-bracer)
+=>
+    (research ri-bracer)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-archer)
+    (can-research ri-ring-archer-armor)
+=>
+    (research ri-ring-archer-armor)
+)
+
+; --- INFANTRY / SIEGE CIVILIZATIONS ---
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (current-age >= castle-age)
+    (building-type-count-total barracks < 3)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (current-age >= imperial-age)
+    (building-type-count-total barracks < 6)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (current-age >= castle-age)
+    (unit-type-count-total militiaman-line < 25)
     (can-train militiaman-line)
 =>
     (train militiaman-line)
 )
 
-; --- Hussars: rapid counter-raiding force (removed: redundant with line ~1946 cap of 25) ---
-
-; --- Hand Cannoneers: powerful ranged infantry ---
 (defrule
+    (goal gl-civ-archetype archetype-infantry)
     (current-age >= imperial-age)
-    (unit-type-count-total hand-cannoneer < 10)
+    (unit-type-count-total militiaman-line < 35)
+    (can-train militiaman-line)
+=>
+    (train militiaman-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-man-at-arms)
+=>
+    (research ri-man-at-arms)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-scale-mail)
+=>
+    (research ri-scale-mail)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-forging)
+=>
+    (research ri-forging)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-long-swordsman)
+=>
+    (research ri-long-swordsman)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-chain-mail)
+=>
+    (research ri-chain-mail)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-squires)
+=>
+    (research ri-squires)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-arson)
+=>
+    (research ri-arson)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-supplies)
+=>
+    (research ri-supplies)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-two-handed-swordsman)
+=>
+    (research ri-two-handed-swordsman)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-champion)
+=>
+    (research ri-champion)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-infantry)
+    (can-research ri-plate-mail)
+=>
+    (research ri-plate-mail)
+)
+
+; --- GUNPOWDER CIVILIZATIONS ---
+(defrule
+    (goal gl-civ-archetype archetype-gunpowder)
+    (current-age >= imperial-age)
+    (unit-type-count-total hand-cannoneer < 25)
     (can-train hand-cannoneer)
 =>
     (train hand-cannoneer)
 )
 
-; ============================================================
-; PHASE 13: MONKS & RELICS (Temple Artifacts)
-; ============================================================
-
 (defrule
-    (current-age >= castle-age)
-    (building-type-count-total monastery < 1)
-    (can-build monastery)
-=>
-    (build monastery)
-)
-
-; Second monastery in Imperial for faster monk production
-(defrule
+    (goal gl-civ-archetype archetype-gunpowder)
     (current-age >= imperial-age)
-    (building-type-count-total monastery < 2)
-    (can-build monastery)
+    (unit-type-count-total bombard-cannon < 5)
+    (can-train bombard-cannon)
 =>
-    (build monastery)
+    (train bombard-cannon)
 )
 
 (defrule
-    (current-age >= castle-age)
-    (unit-type-count-total monk < 5)
-    (can-train monk)
-=>
-    (train monk)
-)
-
-(defrule
+    (goal gl-civ-archetype archetype-gunpowder)
     (current-age >= imperial-age)
-    (unit-type-count-total monk < 8)
-    (can-train monk)
+    (unit-type-count-total scout-cavalry-line < 15)
+    (can-train scout-cavalry-line)
 =>
-    (train monk)
+    (train scout-cavalry-line)
 )
 
-; Monks seek relics across maximum distance
+; --- MESOAMERICAN CIVILIZATIONS (Aztecs, Incas - Eagle Warriors) ---
 (defrule
-    (current-age >= castle-age)
-=>
-    (set-strategic-number sn-relic-return-distance 200)
-    (disable-self)
-)
-
-; ============================================================
-; PHASE 14: DEFENSIVE COMBAT LOGIC
-; ============================================================
-
-; --- IMMEDIATE: Respond with ANY available military (even 1 soldier) ---
-(defrule
-    (town-under-attack)
-    (military-population >= 1)
-=>
-    (set-strategic-number sn-number-attack-groups 1)
-    (set-strategic-number sn-minimum-attack-group-size 1)
-    (set-strategic-number sn-maximum-attack-group-size 10)
-    (set-strategic-number sn-maximum-town-size 40)
-    (set-strategic-number sn-percent-attack-soldiers 100)
-    (attack-now)
-)
-
-; --- Small force: organized defense ---
-(defrule
-    (town-under-attack)
-    (military-population >= 8)
-=>
-    (set-strategic-number sn-number-attack-groups 2)
-    (set-strategic-number sn-minimum-attack-group-size 4)
-    (set-strategic-number sn-maximum-attack-group-size 20)
-    (set-strategic-number sn-maximum-town-size 80)
-    (set-strategic-number sn-percent-attack-soldiers 80)
-    (attack-now)
-)
-
-; --- Full retaliation: massive army unleashed ---
-(defrule
-    (town-under-attack)
-    (military-population >= 30)
-=>
-    (set-strategic-number sn-number-attack-groups 3)
-    (set-strategic-number sn-minimum-attack-group-size 10)
-    (set-strategic-number sn-maximum-attack-group-size 30)
-    (set-strategic-number sn-maximum-town-size 150)
-    (set-strategic-number sn-percent-attack-soldiers 70)
-    (attack-now)
-)
-
-; --- Overwhelming force: counter-offensive ---
-(defrule
-    (town-under-attack)
-    (military-population >= 60)
-=>
-    (set-strategic-number sn-number-attack-groups 5)
-    (set-strategic-number sn-minimum-attack-group-size 12)
-    (set-strategic-number sn-maximum-attack-group-size 40)
-    (set-strategic-number sn-maximum-town-size 255)
-    (set-strategic-number sn-percent-attack-soldiers 80)
-    (attack-now)
-)
-
-; --- Reset to defensive posture when no longer attacked ---
-(defrule
-    (not (town-under-attack))
-    (strategic-number sn-number-attack-groups > 0)
-=>
-    (set-strategic-number sn-number-attack-groups 0)
-    (set-strategic-number sn-minimum-attack-group-size 20)
-    (set-strategic-number sn-maximum-attack-group-size 40)
-    (set-strategic-number sn-maximum-town-size 80)
-    (set-strategic-number sn-percent-attack-soldiers 0)
-    (up-reset-attack-now)
-)
-
-; ============================================================
-; PHASE 15: TARGET PLAYER SELECTION
-; ============================================================
-
-; --- Initial target: closest enemy ---
-(defrule
-    (true)
-=>
-    (up-find-player enemy find-closest gl-target-player)
-    (up-modify-sn sn-target-player-number g:= gl-target-player)
-    (up-modify-sn sn-focus-player-number g:= gl-target-player)
-    (disable-self)
-)
-
-; --- Re-evaluate target every 2 minutes (attack the nearest threat) ---
-(defrule
-    (game-time > 120)
-    (players-building-count any-enemy >= 1)
-=>
-    (up-find-player enemy find-closest gl-target-player)
-    (up-modify-sn sn-target-player-number g:= gl-target-player)
-    (up-modify-sn sn-focus-player-number g:= gl-target-player)
-)
-
-; ============================================================
-; PHASE 16: PROACTIVE AGGRESSION (Not Just Defensive)
-; ============================================================
-
-; --- Feudal Age: Early pressure with small army ---
-(defrule
+    (goal gl-civ-archetype archetype-meso)
     (current-age >= feudal-age)
-    (current-age < castle-age)
-    (military-population >= 8)
-    (game-time > 660)
-    (not (town-under-attack))
+    (unit-type-count-total eagle-warrior-line < 6)
+    (can-train eagle-warrior-line)
 =>
-    (set-strategic-number sn-number-attack-groups 1)
-    (set-strategic-number sn-minimum-attack-group-size 5)
-    (set-strategic-number sn-maximum-attack-group-size 15)
-    (set-strategic-number sn-percent-attack-soldiers 50)
-    (attack-now)
-    (disable-self)
+    (train eagle-warrior-line)
 )
 
-; --- Castle Age: Periodic pressure every ~3 minutes ---
 (defrule
+    (goal gl-civ-archetype archetype-meso)
     (current-age >= castle-age)
-    (current-age < imperial-age)
-    (military-population >= 20)
-    (game-time > 1200)
-    (not (town-under-attack))
+    (unit-type-count-total eagle-warrior-line < 20)
+    (can-train eagle-warrior-line)
 =>
-    (set-strategic-number sn-number-attack-groups 2)
-    (set-strategic-number sn-minimum-attack-group-size 10)
-    (set-strategic-number sn-maximum-attack-group-size 25)
-    (set-strategic-number sn-percent-attack-soldiers 50)
-    (attack-now)
-    (disable-self)
+    (train eagle-warrior-line)
 )
 
-; --- Imperial Age: Full offensive with overwhelming force ---
 (defrule
+    (goal gl-civ-archetype archetype-meso)
     (current-age >= imperial-age)
-    (military-population >= 40)
-    (game-time > 1800)
-    (not (town-under-attack))
+    (unit-type-count-total eagle-warrior-line < 30)
+    (can-train eagle-warrior-line)
 =>
-    (set-strategic-number sn-number-attack-groups 3)
-    (set-strategic-number sn-minimum-attack-group-size 12)
-    (set-strategic-number sn-maximum-attack-group-size 35)
-    (set-strategic-number sn-percent-attack-soldiers 60)
-    (attack-now)
-    (disable-self)
+    (train eagle-warrior-line)
 )
 
-; --- Late game: continuous pressure with massive army ---
+; --- CAMEL SPECIALISTS (Saracens, Gurjaras, Berbers) ---
 (defrule
-    (current-age >= imperial-age)
-    (military-population >= 80)
-    (not (town-under-attack))
-=>
-    (set-strategic-number sn-number-attack-groups 5)
-    (set-strategic-number sn-minimum-attack-group-size 15)
-    (set-strategic-number sn-maximum-attack-group-size 40)
-    (set-strategic-number sn-percent-attack-soldiers 75)
-    (attack-now)
-)
-
-; ============================================================
-; PHASE 17: ADAPTIVE ARMY COMPOSITION
-; ============================================================
-
-; --- Counter heavy cavalry: train more spearmen ---
-(defrule
+    (goal gl-civ-archetype archetype-camel)
     (current-age >= castle-age)
-    (players-unit-type-count target-player knight-line >= 5)
-    (unit-type-count-total spearman-line < 30)
-    (can-train spearman-line)
-=>
-    (train spearman-line)
-)
-
-; --- Counter heavy cavalry: train camels if available ---
-(defrule
-    (current-age >= castle-age)
-    (players-unit-type-count target-player knight-line >= 8)
-    (unit-type-count-total camel-line < 10)
+    (unit-type-count-total camel-line < 18)
     (can-train camel-line)
 =>
     (train camel-line)
 )
 
-; --- Counter mass archers: train more skirmishers ---
+(defrule
+    (goal gl-civ-archetype archetype-camel)
+    (current-age >= imperial-age)
+    (unit-type-count-total camel-line < 28)
+    (can-train camel-line)
+=>
+    (train camel-line)
+)
+
+; --- BALANCED CIVILIZATIONS (Fallback) ---
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= castle-age)
+    (unit-type-count-total knight-line < 15)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= castle-age)
+    (unit-type-count-total archer-line < 15)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= imperial-age)
+    (unit-type-count-total knight-line < 25)
+    (can-train knight-line)
+=>
+    (train knight-line)
+)
+
+(defrule
+    (goal gl-civ-archetype archetype-balanced)
+    (current-age >= imperial-age)
+    (unit-type-count-total archer-line < 25)
+    (can-train archer-line)
+=>
+    (train archer-line)
+)
+; ============================================================
+; SECTION 12: TACTICAL COUNTER-SYSTEM
+; ============================================================
+
 (defrule
     (current-age >= feudal-age)
-    (players-unit-type-count target-player archer-line >= 5)
-    (unit-type-count-total skirmisher-line < 30)
+    (players-unit-type-count target-player knight-line >= 4)
+    (unit-type-count-total spearman-line < 25)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (players-unit-type-count target-player knight-line >= 6)
+    (unit-type-count-total camel-line < 12)
+    (can-train camel-line)
+=>
+    (train camel-line)
+)
+
+(defrule
+    (can-research ri-pikeman)
+=>
+    (research ri-pikeman)
+)
+
+(defrule
+    (can-research ri-halberdier)
+=>
+    (research ri-halberdier)
+)
+
+(defrule
+    (can-research ri-heavy-camel)
+=>
+    (research ri-heavy-camel)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (players-unit-type-count target-player archer-line >= 6)
+    (unit-type-count-total skirmisher-line < 20)
     (can-train skirmisher-line)
 =>
     (train skirmisher-line)
 )
 
-; --- Counter mass archers: train mangonels ---
 (defrule
     (current-age >= castle-age)
     (players-unit-type-count target-player archer-line >= 10)
@@ -2614,304 +1787,16 @@
     (train mangonel-line)
 )
 
-; --- Counter infantry: train more archers ---
 (defrule
-    (current-age >= feudal-age)
-    (players-unit-type-count target-player militiaman-line >= 5)
-    (unit-type-count-total archer-line < 30)
-    (can-train archer-line)
+    (can-research ri-elite-skirmisher)
 =>
-    (train archer-line)
-)
-
-; --- Counter infantry: train knights ---
-(defrule
-    (current-age >= castle-age)
-    (players-unit-type-count target-player militiaman-line >= 8)
-    (unit-type-count-total knight-line < 15)
-    (can-train knight-line)
-=>
-    (train knight-line)
-)
-
-; --- Counter siege: train cavalry to raid ---
-(defrule
-    (current-age >= castle-age)
-    (players-unit-type-count target-player mangonel-line >= 2)
-    (unit-type-count-total scout-cavalry-line < 15)
-    (can-train scout-cavalry-line)
-=>
-    (train scout-cavalry-line)
-)
-
-; ============================================================
-; PHASE 18: MARKET & TRADE (Smart Commerce)
-; ============================================================
-
-; --- Market: ALWAYS keep at least 1 (critical for trade income) ---
-(defrule
-    (current-age >= feudal-age)
-    (building-type-count-total market < 1)
-    (can-build market)
-=>
-    (build market)
-    (chat-to-all "ZULFIKAR: Market is essential! Rebuilding immediately!")
-)
-
-; --- Protect market: rebuild if destroyed in Castle+ ---
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total market < 1)
-    (can-build market)
-=>
-    (build market)
-)
-
-; --- Build 2nd market in Imperial for trade flexibility ---
-(defrule
-    (current-age >= imperial-age)
-    (building-type-count-total market < 2)
-    (can-build market)
-=>
-    (build market)
-)
-
-; --- Trade Carts: generate gold through trade ---
-; In team games, trade with ally market
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total trade-cart < 10)
-    (players-building-type-count any-ally market >= 1)
-    (can-train trade-cart)
-=>
-    (train trade-cart)
+    (research ri-elite-skirmisher)
 )
 
 (defrule
-    (current-age >= imperial-age)
-    (unit-type-count-total trade-cart < 25)
-    (players-building-type-count any-ally market >= 1)
-    (can-train trade-cart)
+    (can-research ri-onager)
 =>
-    (train trade-cart)
-)
-
-; --- Solo games: buy/sell at market for gold when no allies ---
-(defrule
-    (current-age >= castle-age)
-    (gold-amount < 100)
-    (food-amount > 500)
-    (can-sell-commodity food)
-=>
-    (sell-commodity food)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (gold-amount < 100)
-    (wood-amount > 500)
-    (can-sell-commodity wood)
-=>
-    (sell-commodity wood)
-)
-
-; --- Trade Cogs: when ally dock exists ---
-(defrule
-    (current-age >= castle-age)
-    (unit-type-count-total trade-cog < 5)
-    (players-building-type-count any-ally dock >= 1)
-    (can-train trade-cog)
-=>
-    (train trade-cog)
-)
-
-; --- Sell excess resources (price-sensitive) ---
-(defrule
-    (wood-amount > 1800)
-    (commodity-selling-price wood > 35)
-    (can-sell-commodity wood)
-=>
-    (sell-commodity wood)
-)
-
-(defrule
-    (food-amount > 1800)
-    (commodity-selling-price food > 35)
-    (can-sell-commodity food)
-=>
-    (sell-commodity food)
-)
-
-(defrule
-    (stone-amount > 1000)
-    (commodity-selling-price stone >= 125)
-    (can-sell-commodity stone)
-=>
-    (sell-commodity stone)
-)
-
-; --- Sell for age-ups when gold is short ---
-(defrule
-    (gold-amount < 200)
-    (food-amount > 600)
-    (research-available castle-age)
-    (can-sell-commodity food)
-=>
-    (sell-commodity food)
-)
-
-(defrule
-    (gold-amount < 200)
-    (wood-amount > 600)
-    (research-available castle-age)
-    (can-sell-commodity wood)
-=>
-    (sell-commodity wood)
-)
-
-(defrule
-    (gold-amount < 400)
-    (food-amount > 800)
-    (research-available imperial-age)
-    (can-sell-commodity food)
-=>
-    (sell-commodity food)
-)
-
-; --- Emergency gold shortfall ---
-(defrule
-    (gold-amount < 100)
-    (wood-amount > 500)
-    (can-sell-commodity wood)
-=>
-    (sell-commodity wood)
-)
-
-(defrule
-    (gold-amount < 100)
-    (food-amount > 500)
-    (can-sell-commodity food)
-=>
-    (sell-commodity food)
-)
-
-; --- Buy food if starving ---
-(defrule
-    (food-amount < 80)
-    (gold-amount > 400)
-    (can-buy-commodity food)
-=>
-    (buy-commodity food)
-)
-
-; --- Buy stone for castles/towers ---
-(defrule
-    (stone-amount < 200)
-    (gold-amount > 500)
-    (building-type-count-total castle < 2)
-    (can-buy-commodity stone)
-=>
-    (buy-commodity stone)
-)
-
-; --- Emergency wood buy ---
-(defrule
-    (wood-amount < 60)
-    (gold-amount > 400)
-    (can-buy-commodity wood)
-=>
-    (buy-commodity wood)
-)
-
-; ============================================================
-; PHASE 19: DEFENSIVE COMBAT LOGIC
-; ============================================================
-
-; --- Retaliation: small force counter when attacked ---
-(defrule
-    (town-under-attack)
-    (military-population >= 10)
-=>
-    (set-strategic-number sn-number-attack-groups 1)
-    (set-strategic-number sn-minimum-attack-group-size 8)
-    (set-strategic-number sn-maximum-attack-group-size 20)
-    (set-strategic-number sn-maximum-town-size 60)
-    (set-strategic-number sn-percent-attack-soldiers 50)
-    (chat-to-all "ZULFIKAR: Defending the homeland!")
-    (attack-now)
-)
-
-; --- Full retaliation: massive army unleashed ---
-(defrule
-    (town-under-attack)
-    (military-population >= 40)
-=>
-    (set-strategic-number sn-number-attack-groups 3)
-    (set-strategic-number sn-minimum-attack-group-size 12)
-    (set-strategic-number sn-maximum-attack-group-size 30)
-    (set-strategic-number sn-maximum-town-size 150)
-    (set-strategic-number sn-percent-attack-soldiers 65)
-    (chat-to-all "ZULFIKAR: Unleashing the full garrison!")
-    (attack-now)
-)
-
-; --- Overwhelming force: counter-offensive ---
-(defrule
-    (town-under-attack)
-    (military-population >= 80)
-=>
-    (set-strategic-number sn-number-attack-groups 5)
-    (set-strategic-number sn-minimum-attack-group-size 15)
-    (set-strategic-number sn-maximum-attack-group-size 40)
-    (set-strategic-number sn-maximum-town-size 255)
-    (set-strategic-number sn-percent-attack-soldiers 80)
-    (chat-to-all "ZULFIKAR: Total war. Annihilating threat.")
-    (attack-now)
-)
-
-; --- Reset to defensive posture when no longer attacked ---
-(defrule
-    (not (town-under-attack))
-    (strategic-number sn-number-attack-groups > 0)
-    (current-age < imperial-age)
-=>
-    (set-strategic-number sn-number-attack-groups 0)
-    (set-strategic-number sn-minimum-attack-group-size 20)
-    (set-strategic-number sn-maximum-attack-group-size 40)
-    (set-strategic-number sn-maximum-town-size 80)
-    (set-strategic-number sn-percent-attack-soldiers 0)
-    (up-reset-attack-now)
-)
-
-; ============================================================
-; PHASE 20: POPULATION & HOUSING SAFETY
-; ============================================================
-
-; Emergency housing: prevent getting population capped
-(defrule
-    (housing-headroom < 3)
-    (population-headroom > 0)
-    (can-build house)
-=>
-    (build house)
-)
-
-; ============================================================
-; PHASE 21: MISSING UPGRADES
-; ============================================================
-
-; --- Cavalry Archer Upgrade ---
-(defrule
-    (can-research ri-heavy-cavalry-archer)
-=>
-    (research ri-heavy-cavalry-archer)
-)
-
-; --- Siege Upgrades ---
-(defrule
-    (can-research ri-siege-ram)
-=>
-    (research ri-siege-ram)
+    (research ri-onager)
 )
 
 (defrule
@@ -2920,100 +1805,165 @@
     (research ri-siege-onager)
 )
 
-; --- Naval Upgrades: moved to Dock section above ---
-
-
-; --- Unique Unit Upgrade (civ-specific) ---
 (defrule
-    (can-research my-unique-unit-upgrade)
+    (current-age >= feudal-age)
+    (players-unit-type-count target-player militiaman-line >= 5)
+    (unit-type-count-total archer-line < 20)
+    (can-train archer-line)
 =>
-    (research my-unique-unit-upgrade)
-)
-
-; --- Unique Tech Upgrades ---
-(defrule
-    (can-research my-unique-research)
-=>
-    (research my-unique-research)
+    (train archer-line)
 )
 
 (defrule
-    (can-research my-castle-unique-research)
+    (current-age >= castle-age)
+    (players-unit-type-count target-player militiaman-line >= 8)
+    (unit-type-count-total scorpion-line < 4)
+    (can-train scorpion-line)
 =>
-    (research my-castle-unique-research)
+    (train scorpion-line)
 )
 
-; --- Spies (late game info) ---
+(defrule
+    (can-research ri-heavy-scorpion)
+=>
+    (research ri-heavy-scorpion)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (or (players-unit-type-count target-player mangonel-line >= 1)
+        (players-unit-type-count target-player trebuchet >= 1))
+    (unit-type-count-total scout-cavalry-line < 10)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
+
+; Universal baseline defenders
+(defrule
+    (current-age >= feudal-age)
+    (unit-type-count-total spearman-line < 4)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (unit-type-count-total spearman-line < 10)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
 (defrule
     (current-age >= imperial-age)
-    (gold-amount > 2000)
-    (can-research ri-spies)
+    (unit-type-count-total spearman-line < 20)
+    (can-train spearman-line)
 =>
-    (research ri-spies)
+    (train spearman-line)
 )
-
 ; ============================================================
-; PHASE 22: LATE GAME SCALING
+; SECTION 13: COMBAT LOGIC, RETALIATION & COHESIVE ATTACKS
 ; ============================================================
 
-; Scale up defend groups in Imperial for stronger turtle
+; Feudal Harass (only on open maps when military advantage exists)
 (defrule
-    (current-age >= imperial-age)
-    (military-population >= 60)
-=>
-    (set-strategic-number sn-number-defend-groups 5)
-    (set-strategic-number sn-minimum-defend-group-size 8)
-    (set-strategic-number sn-maximum-defend-group-size 30)
-    (disable-self)
-)
-
-; Increase town size in late game for broader control
-(defrule
-    (current-age >= imperial-age)
-    (game-time > 2400)
+    (goal gl-map-style style-open)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (military-population >= 8)
+    (timer-triggered gl-wave-timer)
     (not (town-under-attack))
 =>
-    (set-strategic-number sn-maximum-town-size 100)
-    (set-strategic-number sn-safe-town-size 60)
-    (disable-self)
+    (set-strategic-number sn-number-attack-groups 1)
+    (set-strategic-number sn-minimum-attack-group-size 6)
+    (set-strategic-number sn-maximum-attack-group-size 15)
+    (set-strategic-number sn-percent-attack-soldiers 75)
+    (set-goal gl-attack-status 1)
+    (attack-now)
+    (disable-timer gl-wave-timer)
+    (enable-timer gl-wave-timer 60)
 )
 
-; ============================================================
-; PHASE 23: EARLY WALLING (Stone Walls Only — No Wooden Gates)
-; ============================================================
-; NOTE: Palisade walls create PALISADE GATES (wooden) which are weak.
-; This is hardcoded engine behavior that sn-gate-type-for-wall cannot override.
-; ZULFIKAR uses ONLY stone walls to ensure all gates are stone gates.
-
-; --- Feudal Age: Stone wall perimeter 1 as soon as stone is available ---
+; Castle Age Wave Assault
 (defrule
-    (current-age >= feudal-age)
-    (stone-amount > 100)
-    (can-build-wall 1 stone-wall)
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (military-population >= 20)
+    (timer-triggered gl-wave-timer)
+    (not (town-under-attack))
 =>
-    (enable-wall-placement 1)
-    (build-wall 1 stone-wall)
+    (set-strategic-number sn-number-attack-groups 2)
+    (set-strategic-number sn-minimum-attack-group-size 10)
+    (set-strategic-number sn-maximum-attack-group-size 25)
+    (set-strategic-number sn-percent-attack-soldiers 75)
+    (set-goal gl-attack-status 1)
+    (attack-now)
+    (disable-timer gl-wave-timer)
+    (enable-timer gl-wave-timer 60)
 )
 
-; --- Feudal Age: If no stone, use palisade but WITHOUT gates ---
-; (Palisade wall segments only — no build-gate call = no wooden gates)
+; Imperial Age Deathball Assault
 (defrule
-    (current-age >= feudal-age)
-    (stone-amount < 100)
-    (not (map-type arena))
-    (not (map-type fortress))
-    (not (map-type black-forest))
-    (can-build-wall 1 palisade-wall)
+    (current-age >= imperial-age)
+    (military-population >= 40)
+    (timer-triggered gl-wave-timer)
+    (not (town-under-attack))
 =>
-    (enable-wall-placement 1)
-    (build-wall 1 palisade-wall)
+    (set-strategic-number sn-number-attack-groups 4)
+    (set-strategic-number sn-minimum-attack-group-size 12)
+    (set-strategic-number sn-maximum-attack-group-size 40)
+    (set-strategic-number sn-percent-attack-soldiers 80)
+    (set-goal gl-attack-status 1)
+    (attack-now)
+    (disable-timer gl-wave-timer)
+    (enable-timer gl-wave-timer 60)
 )
 
+; Counter-Attack: Immediate Homeland Defense
+(defrule
+    (town-under-attack)
+    (military-population >= 6)
+=>
+    (set-strategic-number sn-number-attack-groups 2)
+    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-maximum-attack-group-size 30)
+    (set-strategic-number sn-percent-attack-soldiers 100)
+    (set-strategic-number sn-maximum-town-size 60)
+    (attack-now)
+)
+
+; Regroup at fortress when army is low
+(defrule
+    (goal gl-attack-status 1)
+    (current-age >= castle-age)
+    (military-population < 10)
+    (not (town-under-attack))
+=>
+    (set-strategic-number sn-number-attack-groups 0)
+    (set-strategic-number sn-percent-attack-soldiers 0)
+    (set-goal gl-attack-status 0)
+    (up-reset-attack-now)
+    (chat-local-to-self "ZULFIKAR: Forces depleted. Regrouping at fortress.")
+)
+
+; All-in rush on enemy Wonder
+(defrule
+    (players-building-type-count any-enemy wonder >= 1)
+    (military-population >= 8)
+=>
+    (set-strategic-number sn-number-attack-groups 5)
+    (set-strategic-number sn-minimum-attack-group-size 2)
+    (set-strategic-number sn-maximum-attack-group-size 100)
+    (set-strategic-number sn-percent-attack-soldiers 100)
+    (chat-to-all "ZULFIKAR: Enemy Wonder sighted! All forces converge!")
+    (attack-now)
+)
 ; ============================================================
-; PHASE 24: VILLAGER GARRISON DURING RAIDS
+; SECTION 14: VILLAGER GARRISON & RAID SURVIVAL
 ; ============================================================
 
-; --- Garrison villagers in TC when under attack (human instinct) ---
 (defrule
     (town-under-attack)
     (building-type-count town-center >= 1)
@@ -3023,237 +1973,349 @@
     (set-strategic-number sn-disable-villager-garrison 0)
 )
 
-; --- Ungarrison villagers when safe ---
 (defrule
     (not (town-under-attack))
+    (strategic-number sn-number-garrison-units > 0)
 =>
     (set-strategic-number sn-number-garrison-units 0)
 )
 
-; ============================================================
-; PHASE 25: FISH TRAPS (Sustainable Water Economy)
-; ============================================================
-
-; --- Build fish traps when dock exists and economy needs food ---
-(defrule
-    (current-age >= feudal-age)
-    (building-type-count-total dock >= 1)
-    (building-type-count-total fish-trap < 5)
-    (wood-amount > 200)
-    (food-amount < 500)
-    (can-build fish-trap)
-=>
-    (build fish-trap)
-)
-
-(defrule
-    (current-age >= castle-age)
-    (building-type-count-total dock >= 1)
-    (building-type-count-total fish-trap < 15)
-    (wood-amount > 300)
-    (food-amount < 400)
-    (can-build fish-trap)
-=>
-    (build fish-trap)
-)
-
-; ============================================================
-; PHASE 26: ALLY SUPPORT (Team Player Behavior)
-; ============================================================
-
-; --- Tribute food to ally if they're starving and we have excess ---
-(defrule
-    (current-age >= castle-age)
-    (food-amount > 1500)
-    (player-in-game any-ally)
-    (players-civilian-population any-ally < 10)
-=>
-    (tribute-to-player any-ally food 300)
-    (chat-to-player any-ally "ZULFIKAR: Sending food support!")
-)
-
-; --- Tribute gold to ally if we have excess ---
-(defrule
-    (current-age >= castle-age)
-    (gold-amount > 1500)
-    (player-in-game any-ally)
-    (players-military-population any-ally < 5)
-=>
-    (tribute-to-player any-ally gold 200)
-    (chat-to-player any-ally "ZULFIKAR: Gold incoming, build army!")
-)
-
-; ============================================================
-; PHASE 27: WONDER & RELIC VICTORY AWARENESS
-; ============================================================
-
-; --- Attack enemies building a Wonder immediately ---
-(defrule
-    (players-building-type-count any-enemy wonder >= 1)
-    (military-population >= 5)
-=>
-    (set-strategic-number sn-number-attack-groups 5)
-    (set-strategic-number sn-minimum-attack-group-size 1)
-    (set-strategic-number sn-maximum-attack-group-size 200)
-    (set-strategic-number sn-percent-attack-soldiers 100)
-    (chat-to-all "ZULFIKAR: Wonder spotted! ALL-IN ATTACK!")
-    (attack-now)
-)
-
-; --- Build our own Wonder if economy allows ---
-(defrule
-    (current-age >= imperial-age)
-    (food-amount > 1500)
-    (wood-amount > 1500)
-    (gold-amount > 1500)
-    (stone-amount > 1500)
-    (building-type-count-total wonder < 1)
-    (can-build wonder)
-=>
-    (build wonder)
-    (chat-to-all "ZULFIKAR: Constructing a Wonder!")
-)
-
-; ============================================================
-; PHASE 28: PERSONALITY & TAUNTS (Human-like Chat)
-; ============================================================
-
-; --- Chat on reaching Castle Age ---
-(defrule
-    (current-age >= castle-age)
-    (current-age < imperial-age)
-=>
-    (chat-to-all "ZULFIKAR: Castle Age reached. Prepare yourselves.")
-    (disable-self)
-)
-
-; --- Chat on reaching Imperial ---
-(defrule
-    (current-age >= imperial-age)
-=>
-    (chat-to-all "ZULFIKAR: Imperial Age. The endgame begins.")
-    (disable-self)
-)
-
-; --- Chat when collecting all relics ---
-(defrule
-    (hold-relics)
-=>
-    (chat-to-all "ZULFIKAR: All relics secured. Gold flows eternal.")
-    (disable-self)
-)
-
-; --- Taunt the enemy when winning ---
-(defrule
-    (current-age >= imperial-age)
-    (military-population >= 100)
-    (players-military-population any-enemy < 20)
-=>
-    (chat-to-all "ZULFIKAR: Your army crumbles. Surrender is wise.")
-    (disable-self)
-)
-
-; --- Chat when rebuilding after a raid ---
 (defrule
     (town-under-attack)
-    (military-population < 10)
-    (unit-type-count-total villager >= 20)
+    (current-age <= feudal-age)
+    (unit-type-count-total spearman-line < 6)
+    (can-train spearman-line)
 =>
-    (chat-to-all "ZULFIKAR: You will pay for that.")
-    (disable-self)
+    (train spearman-line)
 )
-
 ; ============================================================
-; PHASE 29: NAVAL EXPLORATION (Water Map Awareness)
+; SECTION 15: FAIR COMMERCE, ALLY TRADE & TRASH WARS
+; 100% fair play. Market trading, team trade carts, and
+; automatic transition to trash army when gold deposits deplete.
 ; ============================================================
 
-; --- Explore water with boats on water maps ---
-(defrule
-    (current-age >= feudal-age)
-    (building-type-count-total dock >= 1)
-=>
-    (set-strategic-number sn-number-boat-explore-groups 1)
-    (set-strategic-number sn-minimum-boat-explore-group-size 1)
-    (set-strategic-number sn-number-boat-attack-groups 1)
-    (set-strategic-number sn-minimum-boat-attack-group-size 5)
-    (disable-self)
-)
-
-; --- Increase naval aggression in Castle Age ---
+; Trade Carts (scaled by map size in team games)
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total dock >= 2)
+    (players-building-type-count any-ally market >= 1)
+    (unit-type-count-total trade-cart < 15)
+    (can-train trade-cart)
 =>
-    (set-strategic-number sn-number-boat-attack-groups 2)
-    (set-strategic-number sn-minimum-boat-attack-group-size 8)
-    (set-strategic-number sn-maximum-boat-attack-group-size 20)
-    (set-strategic-number sn-percent-attack-boats 50)
-    (disable-self)
+    (train trade-cart)
 )
 
-; --- Imperial naval dominance ---
 (defrule
     (current-age >= imperial-age)
-    (building-type-count-total dock >= 3)
+    (players-building-type-count any-ally market >= 1)
+    (unit-type-count-total trade-cart < 28)
+    (can-train trade-cart)
 =>
-    (set-strategic-number sn-number-boat-attack-groups 3)
-    (set-strategic-number sn-minimum-boat-attack-group-size 10)
-    (set-strategic-number sn-maximum-boat-attack-group-size 40)
-    (set-strategic-number sn-percent-attack-boats 60)
-    (disable-self)
+    (train trade-cart)
 )
 
+(defrule
+    (goal gl-map-size size-large)
+    (current-age >= imperial-age)
+    (players-building-type-count any-ally market >= 1)
+    (unit-type-count-total trade-cart < 38)
+    (can-train trade-cart)
+=>
+    (train trade-cart)
+)
+
+(defrule
+    (can-research ri-caravan)
+=>
+    (research ri-caravan)
+)
+
+(defrule
+    (can-research ri-coinage)
+=>
+    (research ri-coinage)
+)
+
+(defrule
+    (can-research ri-banking)
+=>
+    (research ri-banking)
+)
+
+; Market balancing
+(defrule
+    (wood-amount > 1400)
+    (gold-amount < 300)
+    (commodity-selling-price wood > 25)
+    (can-sell-commodity wood)
+=>
+    (sell-commodity wood)
+)
+
+(defrule
+    (food-amount > 1400)
+    (gold-amount < 300)
+    (commodity-selling-price food > 25)
+    (can-sell-commodity food)
+=>
+    (sell-commodity food)
+)
+
+; Emergency stone for Citadel
+(defrule
+    (current-age >= castle-age)
+    (stone-amount >= 550)
+    (stone-amount < 650)
+    (gold-amount > 400)
+    (building-type-count-total castle < 1)
+    (can-buy-commodity stone)
+=>
+    (buy-commodity stone)
+    (chat-local-to-self "ZULFIKAR: Procured stone for Citadel completion.")
+)
+
+; Emergency food purchase
+(defrule
+    (food-amount < 50)
+    (gold-amount > 350)
+    (can-buy-commodity food)
+=>
+    (buy-commodity food)
+)
+
+; Ally tributes
+(defrule
+    (current-age >= castle-age)
+    (food-amount > 1600)
+    (player-in-game any-ally)
+    (players-civilian-population any-ally < 15)
+=>
+    (tribute-to-player any-ally food 250)
+    (chat-to-player any-ally "ZULFIKAR: Relief food supplies dispatched!")
+)
+
+(defrule
+    (current-age >= castle-age)
+    (gold-amount > 1600)
+    (player-in-game any-ally)
+    (players-military-population any-ally < 8)
+=>
+    (tribute-to-player any-ally gold 200)
+    (chat-to-player any-ally "ZULFIKAR: Gold dispatched to fund your military!")
+)
+
+; --- LATE GAME TRASH WAR (When Map Gold Depletes) ---
+(defrule
+    (current-age >= imperial-age)
+    (gold-amount < 150)
+    (unit-type-count-total trade-cart < 5)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 50)
+    (set-strategic-number sn-wood-gatherer-percentage 42)
+    (set-strategic-number sn-gold-gatherer-percentage 5)
+    (set-strategic-number sn-stone-gatherer-percentage 3)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (gold-amount < 150)
+    (unit-type-count-total spearman-line < 35)
+    (can-train spearman-line)
+=>
+    (train spearman-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (gold-amount < 150)
+    (unit-type-count-total skirmisher-line < 25)
+    (can-train skirmisher-line)
+=>
+    (train skirmisher-line)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (gold-amount < 150)
+    (unit-type-count-total scout-cavalry-line < 20)
+    (can-train scout-cavalry-line)
+=>
+    (train scout-cavalry-line)
+)
 ; ============================================================
-; PHASE 30: TRANSPORT SHIPS (Cross-water Attacks)
+; SECTION 16: WATER / ISLAND MAP NAVAL DOMINANCE
 ; ============================================================
 
-; --- Build transport ships on water/island maps ---
+; On Water maps: Dark Age Dock & Fishing Ships
 (defrule
+    (goal gl-map-style style-water)
+    (current-age <= dark-age)
+    (building-type-count-total dock < 1)
+    (can-build dock)
+=>
+    (build dock)
+)
+
+(defrule
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total fishing-ship < 6)
+    (can-train fishing-ship)
+=>
+    (train fishing-ship)
+)
+
+; On land maps with fish: build dock in Feudal
+(defrule
+    (goal gl-map-style style-open)
     (current-age >= feudal-age)
-    (or (map-type islands) (map-type team-islands))
+    (resource-found fish)
+    (building-type-count-total dock < 1)
+    (can-build dock)
+=>
+    (build dock)
+)
+
+(defrule
+    (goal gl-map-style style-water)
+    (current-age >= feudal-age)
+    (building-type-count-total dock < 2)
+    (can-build dock)
+=>
+    (build dock)
+)
+
+(defrule
+    (goal gl-map-style style-water)
+    (current-age >= castle-age)
+    (building-type-count-total dock < 3)
+    (can-build dock)
+=>
+    (build dock)
+)
+
+; Feudal Warships
+(defrule
+    (goal gl-map-style style-water)
+    (current-age >= feudal-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total fire-ship-line < 4)
+    (can-train fire-ship-line)
+=>
+    (train fire-ship-line)
+)
+
+(defrule
+    (goal gl-map-style style-water)
+    (current-age >= feudal-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total galley-line < 4)
+    (can-train galley-line)
+=>
+    (train galley-line)
+)
+
+; Castle / Imperial Warships
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total galley-line < 10)
+    (can-train galley-line)
+=>
+    (train galley-line)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total fire-ship-line < 8)
+    (can-train fire-ship-line)
+=>
+    (train fire-ship-line)
+)
+
+; Transport Ships for ground invasion
+(defrule
+    (goal gl-map-style style-water)
+    (current-age >= castle-age)
+    (building-type-count-total dock >= 1)
     (unit-type-count-total transport-ship < 2)
     (can-train transport-ship)
 =>
     (train transport-ship)
 )
 
+; Naval Upgrades
 (defrule
-    (current-age >= castle-age)
-    (building-type-count-total dock >= 1)
-    (unit-type-count-total transport-ship < 3)
-    (can-train transport-ship)
+    (can-research ri-war-galley)
 =>
-    (train transport-ship)
+    (research ri-war-galley)
 )
 
+(defrule
+    (can-research ri-galleon)
+=>
+    (research ri-galleon)
+)
+
+(defrule
+    (can-research ri-fast-fire-ship)
+=>
+    (research ri-fast-fire-ship)
+)
+
+(defrule
+    (can-research ri-careening)
+=>
+    (research ri-careening)
+)
+
+(defrule
+    (can-research ri-dry-dock)
+=>
+    (research ri-dry-dock)
+)
+
+(defrule
+    (can-research ri-shipwright)
+=>
+    (research ri-shipwright)
+)
 ; ============================================================
-; PHASE 31: RESIGN LOGIC (Graceful Surrender)
+; SECTION 17: PERSONALITY, HUMAN CHAT & RESIGN ETIQUETTE
 ; ============================================================
 
-; --- Resign when totally crushed ---
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+=>
+    (chat-to-all "ZULFIKAR: Castle Age reached. The fortress stands resolute.")
+    (disable-self)
+)
+
+(defrule
+    (current-age >= imperial-age)
+=>
+    (chat-to-all "ZULFIKAR: Imperial Age reached. Prepare for siege.")
+    (disable-self)
+)
+
+(defrule
+    (hold-relics)
+=>
+    (chat-to-all "ZULFIKAR: The sacred relics have been gathered.")
+    (disable-self)
+)
+
+; Resign gracefully when utterly destroyed
 (defrule
     (game-time > 1200)
     (unit-type-count-total villager < 1)
     (military-population < 3)
     (building-type-count-total town-center < 1)
 =>
-    (chat-to-all "ZULFIKAR: GG. Well played.")
-    (resign)
-)
-
-; --- Resign when no economy and no hope ---
-(defrule
-    (game-time > 1800)
-    (unit-type-count-total villager < 3)
-    (military-population < 5)
-    (building-type-count-total castle < 1)
-    (building-type-count-total town-center < 1)
-=>
-    (chat-to-all "ZULFIKAR: No recovery possible. GG.")
+    (chat-to-all "ZULFIKAR: gg wp! Well played.")
     (resign)
 )
 
 ; ============================================================
 ; END OF ZULFIKAR AI SCRIPT
 ; ============================================================
-
