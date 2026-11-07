@@ -374,6 +374,47 @@
 =>
     (build town-center)
 )
+
+; --- Regicide Game Mode (Protect King at all costs) ---
+(defrule
+    (regicide-game)
+=>
+    (set-strategic-number sn-number-garrison-units 1)
+    (set-strategic-number sn-safe-town-size 40)
+    (chat-to-all "ZULFIKAR: REGICIDE mode active. Long live the King!")
+    (disable-self)
+)
+
+(defrule
+    (regicide-game)
+    (current-age >= castle-age)
+    (can-build castle)
+    (building-type-count-total castle < 3)
+=>
+    (build castle)
+)
+
+(defrule
+    (regicide-game)
+    (current-age >= castle-age)
+    (can-build-wall 2 stone-wall-line)
+=>
+    (enable-wall-placement 2)
+    (build-wall 2 stone-wall-line)
+)
+
+; --- Empire Wars Game Mode (Starts in Feudal Age at 0:00 with 27 villagers) ---
+(defrule
+    (game-time < 10)
+    (current-age == feudal-age)
+=>
+    (set-goal gl-game-stage feudal-age)
+    (set-strategic-number sn-percent-civilian-gatherers 80)
+    (set-strategic-number sn-percent-civilian-builders 20)
+    (set-strategic-number sn-cap-civilian-builders 16)
+    (chat-to-all "ZULFIKAR: EMPIRE WARS mode detected! Instant combat active.")
+    (disable-self)
+)
 ; ============================================================
 ; SECTION 4: MAP SIZE ADAPTATION
 ; Adjusts dropsite distances, town size limits, and trade scaling
@@ -1614,6 +1655,48 @@
     (research ri-architecture)
 )
 
+; --- Wonder Race & Wonder Victory Mode ---
+(defrule
+    (or (victory-condition wonder)
+        (wonder-race-game))
+    (current-age >= imperial-age)
+    (building-type-count-total wonder < 1)
+    (can-build wonder)
+=>
+    (build wonder)
+    (chat-to-all "ZULFIKAR: The Wonder of the World rises! Defend it!")
+)
+
+(defrule
+    (building-type-count-total wonder >= 1)
+    (building-type-count-total castle < 6)
+    (can-build castle)
+=>
+    (build castle)
+)
+
+; Imperial Monastery Tech Suite
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-theocracy)
+=>
+    (research ri-theocracy)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-illumination)
+=>
+    (research ri-illumination)
+)
+
+(defrule
+    (current-age >= imperial-age)
+    (can-research ri-block-printing)
+=>
+    (research ri-block-printing)
+)
+
 ; Universal Unique Unit Training at Castle (all civs)
 (defrule
     (current-age >= castle-age)
@@ -1699,6 +1782,7 @@
 
 (defrule
     (goal gl-civ-archetype archetype-cavalry)
+    (not (goal gl-map-style style-closed))
     (current-age >= feudal-age)
     (current-age < castle-age)
     (unit-type-count-total scout-cavalry-line < 5)
@@ -2872,6 +2956,17 @@
     (can-train transport-ship)
 =>
     (train transport-ship)
+)
+
+; Water Trade Cogs for Allied Naval Trade
+(defrule
+    (goal gl-map-style style-water)
+    (player-in-game any-ally)
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total trade-cog < 20)
+    (can-train trade-cog)
+=>
+    (train trade-cog)
 )
 
 ; Naval Upgrades
