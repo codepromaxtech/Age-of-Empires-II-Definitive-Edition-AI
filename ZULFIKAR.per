@@ -33,6 +33,7 @@
 (defconst gl-wave-timer 1)         ; Attack wave pacing
 (defconst gl-macro-timer 2)        ; Macro rebalancing timer
 (defconst gl-scout-timer 3)        ; Exploration timer
+(defconst gl-dispersal-timer 4)    ; Anti-bottleneck target dispersal pulse timer
 
 ; --- Map Style Enums ---
 (defconst style-open 1)
@@ -312,7 +313,7 @@
     (disable-self)
 )
 
-; --- Rule 5: Combat & Strategic Cooperation Intelligence ---
+; --- Rule 5: Combat Movement & Group Formation Matrix ---
 (defrule
     (true)
 =>
@@ -325,9 +326,24 @@
     (set-strategic-number sn-coop-share-attacking 1)
     (set-strategic-number sn-building-targeting-mode 1)
     (set-strategic-number sn-free-siege-targeting 0)
+    (set-strategic-number sn-group-form-distance 25)
+    (set-strategic-number sn-attack-group-gather-spacing 4)
+    (disable-self)
+)
+
+; --- Rule 5B: Multi-Vector Target Dispersal & Anti-Swarming Evaluation ---
+(defrule
+    (true)
+=>
+    (set-strategic-number sn-target-evaluation-randomness 250)
+    (set-strategic-number sn-target-evaluation-in-progress -150)
+    (set-strategic-number sn-target-evaluation-attack-attempts -100)
+    (set-strategic-number sn-target-evaluation-damage-capability 60)
+    (set-strategic-number sn-target-evaluation-distance 100)
+    (set-strategic-number sn-target-evaluation-hitpoints -50)
     (set-strategic-number sn-target-evaluation-siege-weapon 500)
-    (set-strategic-number sn-target-evaluation-damage-capability 25)
     (set-strategic-number sn-target-evaluation-time-kill-ratio 50)
+    (set-strategic-number sn-target-evaluation-ally-proximity 0)
     (disable-self)
 )
 
@@ -342,6 +358,7 @@
     (enable-wall-placement 2)
     (enable-timer gl-wave-timer 60)
     (enable-timer gl-macro-timer 15)
+    (enable-timer gl-dispersal-timer 15)
     (chat-to-all "ZULFIKAR: gl hf! Adaptive Universal Engine active.")
     (disable-self)
 )
@@ -2991,7 +3008,25 @@
 ; SECTION 13: COMBAT LOGIC, RETALIATION & COHESIVE ATTACKS
 ; ============================================================
 
-; Feudal Harass (only on open maps when military advantage exists)
+; --- ANTI-BOTTLENECK TARGET DISPERSAL PULSE ---
+; Every 15 seconds during active combat, dynamically pulse target evaluations,
+; ungrouped soldier tasking, and evaluation randomness. This breaks army swarms,
+; prevents dogpiling on a single enemy unit or building, and keeps the whole army
+; utilized across multiple fronts.
+(defrule
+    (goal gl-attack-status 1)
+    (timer-triggered gl-dispersal-timer)
+=>
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
+    (set-strategic-number sn-enable-patrol-attack 1)
+    (set-strategic-number sn-target-evaluation-randomness 300)
+    (set-strategic-number sn-target-evaluation-in-progress -160)
+    (set-strategic-number sn-target-evaluation-attack-attempts -120)
+    (disable-timer gl-dispersal-timer)
+    (enable-timer gl-dispersal-timer 15)
+)
+
+; Feudal Harass (Multi-Squad Raiding: 3 attack groups hitting separate resource points)
 (defrule
     (goal gl-map-style style-open)
     (current-age >= feudal-age)
@@ -3000,17 +3035,22 @@
     (timer-triggered gl-wave-timer)
     (not (town-under-attack))
 =>
-    (set-strategic-number sn-number-attack-groups 1)
-    (set-strategic-number sn-minimum-attack-group-size 6)
-    (set-strategic-number sn-maximum-attack-group-size 15)
-    (set-strategic-number sn-percent-attack-soldiers 75)
+    (set-strategic-number sn-number-attack-groups 3)
+    (set-strategic-number sn-minimum-attack-group-size 3)
+    (set-strategic-number sn-maximum-attack-group-size 6)
+    (set-strategic-number sn-percent-attack-soldiers 80)
+    (set-strategic-number sn-group-form-distance 20)
+    (set-strategic-number sn-attack-group-gather-spacing 4)
+    (set-strategic-number sn-target-evaluation-randomness 250)
+    (set-strategic-number sn-target-evaluation-in-progress -120)
+    (set-strategic-number sn-target-evaluation-attack-attempts -80)
     (set-goal gl-attack-status 1)
     (attack-now)
     (disable-timer gl-wave-timer)
     (enable-timer gl-wave-timer 60)
 )
 
-; Castle Age Wave Assault
+; Castle Age Wave Assault (6 attack groups hitting multiple sectors)
 (defrule
     (current-age >= castle-age)
     (current-age < imperial-age)
@@ -3018,27 +3058,60 @@
     (timer-triggered gl-wave-timer)
     (not (town-under-attack))
 =>
-    (set-strategic-number sn-number-attack-groups 2)
-    (set-strategic-number sn-minimum-attack-group-size 10)
-    (set-strategic-number sn-maximum-attack-group-size 25)
-    (set-strategic-number sn-percent-attack-soldiers 75)
+    (set-strategic-number sn-number-attack-groups 6)
+    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-maximum-attack-group-size 10)
+    (set-strategic-number sn-percent-attack-soldiers 85)
+    (set-strategic-number sn-group-form-distance 25)
+    (set-strategic-number sn-attack-group-gather-spacing 4)
+    (set-strategic-number sn-target-evaluation-randomness 300)
+    (set-strategic-number sn-target-evaluation-in-progress -160)
+    (set-strategic-number sn-target-evaluation-attack-attempts -100)
     (set-goal gl-attack-status 1)
     (attack-now)
     (disable-timer gl-wave-timer)
     (enable-timer gl-wave-timer 60)
 )
 
-; Imperial Age Deathball Assault
+; Imperial Age Deathball Assault (8 attack groups flanking and dispersing across base)
 (defrule
     (current-age >= imperial-age)
     (military-population >= 40)
+    (military-population < 60)
     (timer-triggered gl-wave-timer)
     (not (town-under-attack))
 =>
-    (set-strategic-number sn-number-attack-groups 4)
-    (set-strategic-number sn-minimum-attack-group-size 12)
-    (set-strategic-number sn-maximum-attack-group-size 40)
-    (set-strategic-number sn-percent-attack-soldiers 80)
+    (set-strategic-number sn-number-attack-groups 8)
+    (set-strategic-number sn-minimum-attack-group-size 5)
+    (set-strategic-number sn-maximum-attack-group-size 15)
+    (set-strategic-number sn-percent-attack-soldiers 85)
+    (set-strategic-number sn-group-form-distance 30)
+    (set-strategic-number sn-attack-group-gather-spacing 4)
+    (set-strategic-number sn-target-evaluation-randomness 350)
+    (set-strategic-number sn-target-evaluation-in-progress -180)
+    (set-strategic-number sn-target-evaluation-attack-attempts -120)
+    (set-goal gl-attack-status 1)
+    (attack-now)
+    (disable-timer gl-wave-timer)
+    (enable-timer gl-wave-timer 60)
+)
+
+; Imperial Age Grand Frontline Saturation Assault (12 attack groups saturating entire map)
+(defrule
+    (current-age >= imperial-age)
+    (military-population >= 60)
+    (timer-triggered gl-wave-timer)
+    (not (town-under-attack))
+=>
+    (set-strategic-number sn-number-attack-groups 12)
+    (set-strategic-number sn-minimum-attack-group-size 6)
+    (set-strategic-number sn-maximum-attack-group-size 18)
+    (set-strategic-number sn-percent-attack-soldiers 90)
+    (set-strategic-number sn-group-form-distance 35)
+    (set-strategic-number sn-attack-group-gather-spacing 4)
+    (set-strategic-number sn-target-evaluation-randomness 400)
+    (set-strategic-number sn-target-evaluation-in-progress -220)
+    (set-strategic-number sn-target-evaluation-attack-attempts -150)
     (set-goal gl-attack-status 1)
     (attack-now)
     (disable-timer gl-wave-timer)
@@ -3051,16 +3124,17 @@
 ; while maintaining reserves so it never falls for decoy raids.
 
 ; --- 1. MINOR HARASSMENT: Decoy / Small Raid (< 6 enemy military) ---
-; Anti-Baiting: Deploy only an agile 4-8 unit counter squad, keeping main army in reserve!
+; Anti-Baiting: Deploy an agile 2-squad counter, keeping main army in reserve!
 (defrule
     (town-under-attack)
     (players-military-population any-enemy < 6)
     (military-population >= 4)
 =>
-    (set-strategic-number sn-number-attack-groups 1)
-    (set-strategic-number sn-minimum-attack-group-size 3)
-    (set-strategic-number sn-maximum-attack-group-size 8)
+    (set-strategic-number sn-number-attack-groups 2)
+    (set-strategic-number sn-minimum-attack-group-size 2)
+    (set-strategic-number sn-maximum-attack-group-size 6)
     (set-strategic-number sn-percent-attack-soldiers 40)
+    (set-strategic-number sn-target-evaluation-in-progress -100)
     (set-strategic-number sn-maximum-town-size 45)
     (attack-now)
 )
@@ -3074,18 +3148,19 @@
     (or (unit-type-count-total spearman-line >= 2)
         (unit-type-count-total camel-line >= 2))
 =>
-    (set-strategic-number sn-number-attack-groups 2)
-    (set-strategic-number sn-minimum-attack-group-size 4)
-    (set-strategic-number sn-maximum-attack-group-size 15)
-    (set-strategic-number sn-percent-attack-soldiers 60)
+    (set-strategic-number sn-number-attack-groups 3)
+    (set-strategic-number sn-minimum-attack-group-size 3)
+    (set-strategic-number sn-maximum-attack-group-size 10)
+    (set-strategic-number sn-percent-attack-soldiers 65)
+    (set-strategic-number sn-target-evaluation-in-progress -120)
+    (set-strategic-number sn-target-evaluation-randomness 250)
     (set-strategic-number sn-maximum-town-size 50)
     (attack-now)
-    (chat-local-to-self "ZULFIKAR: Cavalry raid! Intercepting with anti-cavalry.")
+    (chat-local-to-self "ZULFIKAR: Cavalry raid! Intercepting with anti-cavalry squads.")
 )
 
 ; --- 3. THREAT: ENEMY ARCHER / RANGED RAID ---
 ; Dispatch high pierce armor & skirmishers: Skirmishers, Knights, Mangonels
-; (Keeps spearmen back from arrow slaughter)
 (defrule
     (town-under-attack)
     (or (players-unit-type-count any-enemy archer-line >= 2)
@@ -3094,13 +3169,15 @@
         (or (unit-type-count-total knight-line >= 2)
             (unit-type-count-total mangonel-line >= 1)))
 =>
-    (set-strategic-number sn-number-attack-groups 2)
-    (set-strategic-number sn-minimum-attack-group-size 4)
-    (set-strategic-number sn-maximum-attack-group-size 18)
-    (set-strategic-number sn-percent-attack-soldiers 65)
+    (set-strategic-number sn-number-attack-groups 3)
+    (set-strategic-number sn-minimum-attack-group-size 3)
+    (set-strategic-number sn-maximum-attack-group-size 12)
+    (set-strategic-number sn-percent-attack-soldiers 70)
+    (set-strategic-number sn-target-evaluation-in-progress -120)
+    (set-strategic-number sn-target-evaluation-randomness 250)
     (set-strategic-number sn-maximum-town-size 50)
     (attack-now)
-    (chat-local-to-self "ZULFIKAR: Archer raid! Deploying skirmishers and cavalry.")
+    (chat-local-to-self "ZULFIKAR: Archer raid! Deploying skirmishers and cavalry squads.")
 )
 
 ; --- 4. THREAT: ENEMY SIEGE PUSH (Mangonels / Rams / Trebuchets) ---
@@ -3113,29 +3190,33 @@
     (or (unit-type-count-total scout-cavalry-line >= 2)
         (unit-type-count-total knight-line >= 2))
 =>
-    (set-strategic-number sn-number-attack-groups 2)
-    (set-strategic-number sn-minimum-attack-group-size 4)
-    (set-strategic-number sn-maximum-attack-group-size 15)
+    (set-strategic-number sn-number-attack-groups 3)
+    (set-strategic-number sn-minimum-attack-group-size 3)
+    (set-strategic-number sn-maximum-attack-group-size 12)
     (set-strategic-number sn-percent-attack-soldiers 70)
+    (set-strategic-number sn-target-evaluation-in-progress -120)
+    (set-strategic-number sn-target-evaluation-randomness 250)
     (set-strategic-number sn-maximum-town-size 65)
     (attack-now)
-    (chat-local-to-self "ZULFIKAR: Enemy siege detected! Cavalry charging siege engines!")
+    (chat-local-to-self "ZULFIKAR: Enemy siege detected! Cavalry squads charging siege engines!")
 )
 
 ; --- 5. MAJOR INVASION / TOWN BREACH (Enemy army >= 6 entering base) ---
-; Existential threat: Mobilize full fortress garrison to repel the assault!
+; Existential threat: Mobilize full fortress defense distributed across 6 combat groups!
 (defrule
     (town-under-attack)
     (players-military-population any-enemy >= 6)
     (military-population >= 6)
 =>
-    (set-strategic-number sn-number-attack-groups 3)
-    (set-strategic-number sn-minimum-attack-group-size 6)
-    (set-strategic-number sn-maximum-attack-group-size 35)
+    (set-strategic-number sn-number-attack-groups 6)
+    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-maximum-attack-group-size 15)
     (set-strategic-number sn-percent-attack-soldiers 100)
+    (set-strategic-number sn-target-evaluation-in-progress -150)
+    (set-strategic-number sn-target-evaluation-randomness 300)
     (set-strategic-number sn-maximum-town-size 70)
     (attack-now)
-    (chat-to-all "ZULFIKAR: Citadel breached! Full fortress defense mobilized!")
+    (chat-to-all "ZULFIKAR: Citadel breached! Full fortress defense mobilized across all sectors!")
 )
 
 ; Regroup at fortress when army is low
@@ -3192,7 +3273,7 @@
         (unit-type-count-total bombard-cannon >= 2))
 =>
     (set-strategic-number sn-target-evaluation-siege-weapon 500)
-    (set-strategic-number sn-target-evaluation-close-by 200)
+    (set-strategic-number sn-target-evaluation-distance 200)
     (set-strategic-number sn-target-evaluation-range 80)
     (chat-local-to-self "ZULFIKAR: Standoff siege deployed! Fortifications under siege.")
 )
@@ -3207,8 +3288,7 @@
         (unit-type-count-total bombard-cannon >= 1))
 =>
     (set-strategic-number sn-attack-group-gather-spacing 3)
-    (set-strategic-number sn-target-evaluation-close-by 300)
-    (set-strategic-number sn-target-evaluation-distance -150)
+    (set-strategic-number sn-target-evaluation-distance 150)
     (set-strategic-number sn-target-evaluation-range 70)
     (chat-local-to-self "ZULFIKAR: Long-range siege deployed! Protective bodyguard perimeter locked.")
 )
@@ -3221,10 +3301,18 @@
     (or (players-unit-type-count any-enemy knight-line >= 1)
         (players-unit-type-count any-enemy scout-cavalry-line >= 1))
 =>
-    (set-strategic-number sn-target-evaluation-close-by 400)
+    (set-strategic-number sn-target-evaluation-distance 250)
     (set-strategic-number sn-target-evaluation-damage-capability 150)
-    (set-strategic-number sn-target-evaluation-distance -200)
     (chat-local-to-self "ZULFIKAR: Enemy cavalry diving siege line! Escorts intercepting immediately.")
+)
+
+; Standard Attack Formation Spacing (when not in tight siege escort mode)
+(defrule
+    (goal gl-attack-status 1)
+    (unit-type-count-total trebuchet == 0)
+    (unit-type-count-total bombard-cannon == 0)
+=>
+    (set-strategic-number sn-attack-group-gather-spacing 4)
 )
 
 ; --- STRATEGIC BATTLE PLAN: FRIENDLY FIRE AVOIDANCE ---
