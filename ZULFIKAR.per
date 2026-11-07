@@ -27,6 +27,7 @@
 (defconst gl-game-stage 4)         ; 0=Dark, 1=Feudal, 2=Castle, 3=Imp, 4=TrashWar
 (defconst gl-attack-status 5)      ; 0=Regrouping/Defending, 1=Attacking
 (defconst gl-target-player 6)
+(defconst gl-saving-for-imperial 7) ; 0=Normal training, 1=Budgeting for Imperial Age advance
 
 ; --- Timers ---
 (defconst gl-wave-timer 1)         ; Attack wave pacing
@@ -229,6 +230,7 @@
 (defconst ri-fast-fire-ship 24)
 (defconst ri-heavy-demolition-ship 23)
 (defconst ri-elite-cannon-galleon 37)
+(defconst ri-herbal-medicine 441)
 ; ============================================================
 ; SECTION 2: INITIALIZATION & STRATEGIC FOUNDATIONS
 ; Split into modular rules with <= 12 actions to comply with
@@ -1193,6 +1195,63 @@
     (research ri-stone-mining)
 )
 
+; Dynamic Lumber Camp Relocation (Zero Walking Latency when woodline recedes)
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total lumber-camp < 6)
+    (dropsite-min-distance wood > 4)
+    (dropsite-min-distance wood < 35)
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
+    (chat-local-to-self "ZULFIKAR: Woodline depleted. Relocating lumber camp directly to forest edge.")
+)
+
+; Dynamic Mining Camp Relocation (Gold vein exhaustion)
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total mining-camp < 6)
+    (dropsite-min-distance gold > 4)
+    (dropsite-min-distance gold < 35)
+    (can-build mining-camp)
+=>
+    (build mining-camp)
+    (chat-local-to-self "ZULFIKAR: Gold deposit exhausted. Relocating mining camp to next vein.")
+)
+
+; Dynamic Mining Camp Relocation (Stone quarry exhaustion)
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total mining-camp < 6)
+    (dropsite-min-distance stone > 4)
+    (dropsite-min-distance stone < 35)
+    (can-build mining-camp)
+=>
+    (build mining-camp)
+    (chat-local-to-self "ZULFIKAR: Stone quarry exhausted. Relocating mining camp to next quarry.")
+)
+
+; Forward Outpost Vision Network (20 tiles Line of Sight for early attack detection)
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total outpost < 2)
+    (stone-amount >= 5)
+    (wood-amount >= 150)
+    (can-build outpost)
+=>
+    (build outpost)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total outpost < 4)
+    (stone-amount >= 10)
+    (wood-amount >= 200)
+    (can-build outpost)
+=>
+    (build outpost)
+)
+
 ; Universal Infrastructure: 1 Barracks (prerequisite for Stables & Ranges across all maps)
 (defrule
     (current-age >= feudal-age)
@@ -1467,7 +1526,7 @@
     (build watch-tower)
 )
 
-; Monastery & Relic Hunting
+; Monastery & Early Relic Rush (Sprint at minute 18-22 before opponents take them)
 (defrule
     (current-age >= castle-age)
     (building-type-count-total monastery < 1)
@@ -1478,16 +1537,19 @@
 
 (defrule
     (current-age >= castle-age)
+    (building-type-count-total monastery >= 1)
     (unit-type-count-total monk < 4)
     (can-train monk)
 =>
     (train monk)
+    (set-strategic-number sn-relic-return-distance 500)
+    (chat-local-to-self "ZULFIKAR: Early Castle Age! Sprinting to claim neutral map relics.")
 )
 
 ; Active Scouting for Relics & Map Awareness
 (defrule
     (current-age >= castle-age)
-    (unit-type-count-total scout-cavalry-line < 1)
+    (unit-type-count-total scout-cavalry-line < 2)
     (can-train scout-cavalry-line)
 =>
     (train scout-cavalry-line)
@@ -1512,6 +1574,25 @@
     (can-research ri-redemption)
 =>
     (research ri-redemption)
+)
+
+(defrule
+    (current-age >= castle-age)
+    (can-research ri-herbal-medicine)
+=>
+    (research ri-herbal-medicine)
+)
+
+; Post-Combat Monk Field Hospital (Heals wounded units to 100% HP between waves)
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total monastery >= 1)
+    (unit-type-count-total monk >= 1)
+    (not (town-under-attack))
+    (goal gl-attack-status 0)
+=>
+    (set-strategic-number sn-gather-defense-units 1)
+    (set-strategic-number sn-special-defense-distance1 25)
 )
 
 ; Siege Workshop
@@ -1557,6 +1638,29 @@
     (can-train petard)
 =>
     (train petard)
+)
+
+; --- EXPERT IMPERIAL ADVANCE BUDGETING THROTTLE ---
+; When close to Imperial Age requirements (1000f, 800g), throttle non-urgent unit queues
+; so resources stockpile rapidly, advancing to Imperial Age 5-10 minutes faster!
+(defrule
+    (current-age == castle-age)
+    (food-amount >= 750)
+    (gold-amount >= 600)
+    (not (town-under-attack))
+    (goal gl-saving-for-imperial 0)
+=>
+    (set-goal gl-saving-for-imperial 1)
+    (chat-local-to-self "ZULFIKAR: Close to Imperial Age! Budgeting resources for fast advance.")
+)
+
+(defrule
+    (current-age >= castle-age)
+    (or (current-age >= imperial-age)
+        (town-under-attack))
+    (goal gl-saving-for-imperial 1)
+=>
+    (set-goal gl-saving-for-imperial 0)
 )
 
 (defrule
@@ -3113,8 +3217,23 @@
 ; SECTION 14: VILLAGER GARRISON & RAID SURVIVAL
 ; ============================================================
 
+; --- SMART TOWN BELL (ANTI-DECOY ECONOMY PRESERVATION) ---
+; Minor raid (< 4 enemy military): Shelter only 2-3 villagers in immediate danger.
+; 90% of civilian gatherers continue farming and logging without economic paralysis!
 (defrule
     (town-under-attack)
+    (players-military-population any-enemy < 4)
+    (building-type-count town-center >= 1)
+=>
+    (set-strategic-number sn-maximum-garrison-fill 5)
+    (set-strategic-number sn-number-garrison-units 3)
+    (set-strategic-number sn-disable-villager-garrison 0)
+)
+
+; Major invasion (>= 4 enemy military): Full fortress garrison for maximum defensive arrow DPS!
+(defrule
+    (town-under-attack)
+    (players-military-population any-enemy >= 4)
     (building-type-count town-center >= 1)
 =>
     (set-strategic-number sn-maximum-garrison-fill 15)
