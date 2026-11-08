@@ -6,30 +6,25 @@ ZULFIKAR CAMERA DIRECTOR - PROFESSIONAL YOUTUBE BROADCAST SUITE
 Target Platform: Windows 11 (DirectX 11 / DirectInput Native, Zero Pip Dependencies)
 Game: Age of Empires II: Definitive Edition (Live Matches, AI Battles, & Replays)
 
-WHY THIS ENHANCED VERSION SOLVES FOCUS AND CAMERA MOVEMENT:
-  1. DirectX 11 DirectInput Hardware Injection (SendInput):
-     - Uses Windows 11 SendInput with hardware scancodes and extended flags.
-     - DirectInput arrow keys (Left, Right, Up, Down), Spacebar, and Ctrl+F are
-       reliably received by the AoE2:DE DirectX engine even in borderless/fullscreen.
-  2. Active Cinematic Camera Choreography:
-     - Instead of remaining frozen during dwell time, the Auto-Director actively
-       glides and pans across battle hotspots (Frontline sweeps, Siege tracking,
-       Flank cavalry glides) with smooth micro-pulsed camera movements.
-  3. Resilient Multi-Layer Window Guard with Hysteresis:
-     - Process name verification (AoE2DE_s.exe / AoE2DE.exe).
-     - Root ancestor window hierarchy traversal (handles child DirectX render surfaces).
-     - 8-second sticky buffer prevents transient menu clicks and overlays from pausing.
-     - Toggle Window Guard ON/OFF at will with [Insert], [G], or '--no-guard'.
-  4. Safe Global Hotkeys (Zero AoE2 Hotkey or Laptop Fn Key Conflicts):
-     - [Insert] or [G]          -> Toggle Window Guard (Focus Check) ON / OFF
-     - [Home]   or [Num 2]      -> Smooth Panoramic Glide Sweep
-     - [End]    or [Num 3]      -> Vanguard Chase-Cam (Ctrl + F Follow Cam)
-     - [Space]  or [Num 0]      -> Snap Camera to Latest Battle Flare
-     - [PgDn]   or [N]          -> Next Combat Hotspot
-     - [PgUp]   or [B]          -> Previous Combat Hotspot
-     - [Num 4]  /  [Num 6]      -> Manual Glide Left / Right
-     - [Num 8]  /  [Num 5]      -> Manual Glide Up / Down
-     - [Esc]    or [Q]          -> Safe Exit
+KEY FIXES & CINEMATIC CAPABILITIES:
+  1. Continuous DirectInput Arrow Holding:
+     - Holds DirectInput extended arrow keys (Left, Right, Up, Down) down for
+       the full duration of each panoramic glide.
+     - Works seamlessly with AoE2:DE's natural camera acceleration and inertia,
+       producing silky-smooth cinema glides instead of stalled micro-taps.
+     - Always releases keys in try...finally blocks so keys never stick.
+  2. Synthetic Input Feedback Loop Elimination:
+     - Removed Space (' ') from terminal command listeners to prevent synthetic
+       Spacebar re-injection storms.
+     - Implemented console input buffer flushing (msvcrt.kbhit() drain) so
+       spurious or synthetic keystrokes cannot lock up the director.
+  3. Safe Global In-Game Hotkeys:
+     - Removed in-game letter keys (e.g. 'G' for garrison/gate) from global
+       GetAsyncKeyState polling. Focus guard toggle is mapped strictly to [Insert].
+     - Added [F9] / 'f' to automatically find and bring the AoE2:DE window to front.
+  4. Automatic AoE2:DE Window Focus:
+     - On launch and via hotkey, locates the AoE2:DE process window handle, restores
+       it if minimized, and brings it to foreground for instant key reception.
 ================================================================================
 """
 
@@ -71,7 +66,7 @@ VK_DOWN     = 0x28
 VK_ESCAPE   = 0x1B
 VK_CONTROL  = 0x11
 VK_F        = 0x46
-VK_G        = 0x47
+VK_F9       = 0x78
 VK_NUMPAD0  = 0x60
 VK_NUMPAD1  = 0x61
 VK_NUMPAD2  = 0x62
@@ -162,80 +157,134 @@ def log_event(message, tag="DIRECTOR"):
     sys.stdout.flush()
 
 # ----------------------------------------------------------------------
+# Window Focus & Foreground Management
+# ----------------------------------------------------------------------
+def find_aoe2_window():
+    """Locates the AoE2:DE game window handle."""
+    if not IS_WINDOWS or not user32:
+        return None
+    aoe2_hwnd = None
+
+    def enum_cb(hwnd, lparam):
+        nonlocal aoe2_hwnd
+        if not user32.IsWindowVisible(hwnd):
+            return True
+        length = user32.GetWindowTextLengthW(hwnd)
+        if length > 0:
+            buf = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(hwnd, buf, length + 1)
+            title = buf.value.lower()
+            if ("age of empires" in title or "aoe2" in title) and "visual studio" not in title:
+                aoe2_hwnd = hwnd
+                return False  # found, stop enumeration
+        return True
+
+    WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    cb = WNDENUMPROC(enum_cb)
+    user32.EnumWindows(cb, 0)
+    return aoe2_hwnd
+
+def bring_aoe2_to_front():
+    """Brings AoE2:DE to the foreground so DirectX input is immediately received."""
+    hwnd = find_aoe2_window()
+    if hwnd and user32:
+        try:
+            # If minimized, restore it (SW_RESTORE = 9)
+            user32.ShowWindow(hwnd, 9)
+            user32.SetForegroundWindow(hwnd)
+            user32.BringWindowToTop(hwnd)
+            return True
+        except Exception:
+            pass
+    return False
+
+# ----------------------------------------------------------------------
 # Hardware DirectInput Key Injection Routines
 # ----------------------------------------------------------------------
-def send_key_scancode(scan_code, extended=False, press_duration=0.08, vk=0):
-    """Sends a DirectInput hardware scancode using SendInput and keybd_event."""
+def direct_key_down(scan_code, extended=False, vk=0):
+    """Presses and holds a hardware scancode (DirectInput SendInput + keybd_event)."""
     if not IS_WINDOWS or not user32:
         return
 
-    flags_down = KEYEVENTF_SCANCODE
-    flags_up = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP
+    flags = KEYEVENTF_SCANCODE
     if extended:
-        flags_down |= KEYEVENTF_EXTENDEDKEY
-        flags_up |= KEYEVENTF_EXTENDEDKEY
+        flags |= KEYEVENTF_EXTENDEDKEY
 
-    # 1. Primary: Windows 11 SendInput (DirectX standard)
+    # 1. Primary: Windows 11 SendInput (DirectX DirectInput standard)
     try:
-        inp_down = INPUT()
-        inp_down.type = INPUT_KEYBOARD
-        inp_down.u.ki.wVk = vk
-        inp_down.u.ki.wScan = scan_code
-        inp_down.u.ki.dwFlags = flags_down
-        inp_down.u.ki.time = 0
-        inp_down.u.ki.dwExtraInfo = 0
-        user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+        inp = INPUT()
+        inp.type = INPUT_KEYBOARD
+        inp.u.ki.wVk = vk
+        inp.u.ki.wScan = scan_code
+        inp.u.ki.dwFlags = flags
+        inp.u.ki.time = 0
+        inp.u.ki.dwExtraInfo = 0
+        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
     except Exception:
         pass
 
     # 2. Secondary fallback: keybd_event
     try:
-        user32.keybd_event(vk, scan_code, flags_down, 0)
+        user32.keybd_event(vk, scan_code, flags, 0)
     except Exception:
         pass
 
-    time.sleep(press_duration)
+def direct_key_up(scan_code, extended=False, vk=0):
+    """Releases a hardware scancode (DirectInput SendInput + keybd_event)."""
+    if not IS_WINDOWS or not user32:
+        return
 
+    flags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP
+    if extended:
+        flags |= KEYEVENTF_EXTENDEDKEY
+
+    # 1. Primary: Windows 11 SendInput
     try:
-        inp_up = INPUT()
-        inp_up.type = INPUT_KEYBOARD
-        inp_up.u.ki.wVk = vk
-        inp_up.u.ki.wScan = scan_code
-        inp_up.u.ki.dwFlags = flags_up
-        inp_up.u.ki.time = 0
-        inp_up.u.ki.dwExtraInfo = 0
-        user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
+        inp = INPUT()
+        inp.type = INPUT_KEYBOARD
+        inp.u.ki.wVk = vk
+        inp.u.ki.wScan = scan_code
+        inp.u.ki.dwFlags = flags
+        inp.u.ki.time = 0
+        inp.u.ki.dwExtraInfo = 0
+        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
     except Exception:
         pass
 
+    # 2. Secondary fallback: keybd_event
     try:
-        user32.keybd_event(vk, scan_code, flags_up, 0)
+        user32.keybd_event(vk, scan_code, flags, 0)
     except Exception:
         pass
 
 def send_spacebar_jump():
     """Sends hardware Spacebar tap into AoE2:DE to jump to latest beacon flare."""
     if IS_WINDOWS and user32:
-        send_key_scancode(SC_SPACE, extended=False, press_duration=0.06, vk=VK_SPACE)
+        direct_key_down(SC_SPACE, extended=False, vk=VK_SPACE)
+        time.sleep(0.08)
+        direct_key_up(SC_SPACE, extended=False, vk=VK_SPACE)
     elif IS_LINUX:
         os.system("xdotool key space 2>/dev/null")
 
 def send_follow_cam():
     """Sends Ctrl + F into AoE2:DE to lock camera onto selected unit."""
     if IS_WINDOWS and user32:
-        # Ctrl down
-        send_key_scancode(SC_LCONTROL, extended=False, press_duration=0.02, vk=VK_CONTROL)
-        # F down and up
-        send_key_scancode(SC_F, extended=False, press_duration=0.06, vk=VK_F)
-        # Ctrl up
-        user32.keybd_event(VK_CONTROL, SC_LCONTROL, KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP, 0)
+        direct_key_down(SC_LCONTROL, extended=False, vk=VK_CONTROL)
+        time.sleep(0.04)
+        direct_key_down(SC_F, extended=False, vk=VK_F)
+        time.sleep(0.08)
+        direct_key_up(SC_F, extended=False, vk=VK_F)
+        time.sleep(0.04)
+        direct_key_up(SC_LCONTROL, extended=False, vk=VK_CONTROL)
     elif IS_LINUX:
         os.system("xdotool key ctrl+f 2>/dev/null")
 
-def send_smooth_pan(direction="RIGHT", duration_sec=3.5):
+def send_smooth_pan(direction="RIGHT", duration_sec=3.5, stop_check_fn=None):
     """
     Smoothly glides the camera across the battlefield in the specified direction.
-    Uses micro-pulsed DirectInput arrow strokes yielding silky-smooth panning.
+    Holds the DirectInput extended arrow key continuously for duration_sec,
+    enabling AoE2:DE's natural cinematic smooth camera acceleration.
+    Guarantees key release in a finally block so keys never stick.
     """
     if not IS_WINDOWS or not user32:
         if IS_LINUX:
@@ -255,10 +304,17 @@ def send_smooth_pan(direction="RIGHT", duration_sec=3.5):
     elif direction == "DOWN":
         sc, vk = SC_DOWN, VK_DOWN
 
-    start = time.time()
-    while time.time() - start < duration_sec:
-        send_key_scancode(sc, extended=True, press_duration=0.08, vk=vk)
-        time.sleep(0.04)
+    try:
+        # Hold key down continuously for cinematic camera acceleration
+        direct_key_down(sc, extended=True, vk=vk)
+        t_end = time.time() + duration_sec
+        while time.time() < t_end:
+            if stop_check_fn and stop_check_fn():
+                break
+            time.sleep(0.05)
+    finally:
+        # Guarantee key release
+        direct_key_up(sc, extended=True, vk=vk)
 
 # ----------------------------------------------------------------------
 # Multi-Layer Window Guard with Focus Hysteresis
@@ -293,14 +349,12 @@ def is_aoe2_focused(guard_enabled=True):
 
         title = get_hwnd_title(hwnd)
         if not title:
-            # Check root parent (GA_ROOT = 2) for child render surfaces
             root_hwnd = user32.GetAncestor(hwnd, 2)
             if root_hwnd:
                 title = get_hwnd_title(root_hwnd)
 
         is_aoe2 = ("age of empires" in title or "aoe2" in title or "definitive edition" in title)
 
-        # Process Image Name Check
         if not is_aoe2 and kernel32:
             try:
                 pid = wintypes.DWORD()
@@ -317,7 +371,6 @@ def is_aoe2_focused(guard_enabled=True):
             except Exception:
                 pass
 
-        # Explicit non-game blacklist
         blacklist = ("chrome", "firefox", "msedge", "discord", "obs64", "code", "devenv", "windowsterminal", "cmd.exe", "powershell")
         if any(b in title for b in blacklist):
             return False
@@ -326,7 +379,6 @@ def is_aoe2_focused(guard_enabled=True):
             _last_aoe2_seen_time = time.time()
             return True
 
-        # Keep active if AoE2 was seen recently (grace period)
         if (time.time() - _last_aoe2_seen_time) < 8.0:
             return True
 
@@ -395,8 +447,6 @@ class ZulfikarCameraDirector:
             self.time_in_hotspot = 0.0
 
         self.snap_to_beacon("MANUAL" if manual else "AUTO")
-
-        # Automatically initiate a smooth panoramic glide along the hotspot vector
         self.trigger_panoramic_glide(direction=self.current_hotspot.pan_dir, duration=3.5)
 
     def trigger_chase_cam(self):
@@ -407,26 +457,29 @@ class ZulfikarCameraDirector:
 
     def trigger_panoramic_glide(self, direction=None, duration=4.0):
         """Executes an asynchronous smooth camera sweep across the battle line."""
-        if self.glide_in_progress:
-            return
+        with self.lock:
+            if self.glide_in_progress:
+                return
+            self.glide_in_progress = True
 
         pan_dir = direction or self.current_hotspot.pan_dir
 
         def glide_worker():
-            self.glide_in_progress = True
-            log_event(f"Executing smooth {duration:.1f}s panoramic glide ({pan_dir}) across {self.current_hotspot.name}...", "PANORAMA")
-            if self.can_inject():
-                send_smooth_pan(direction=pan_dir, duration_sec=duration)
-            else:
-                time.sleep(duration)
-            self.glide_in_progress = False
+            try:
+                log_event(f"Executing smooth {duration:.1f}s panoramic glide ({pan_dir}) across {self.current_hotspot.name}...", "PANORAMA")
+                if self.can_inject():
+                    send_smooth_pan(direction=pan_dir, duration_sec=duration, stop_check_fn=lambda: not self.is_running)
+                else:
+                    time.sleep(duration)
+            finally:
+                with self.lock:
+                    self.glide_in_progress = False
 
         threading.Thread(target=glide_worker, daemon=True).start()
 
     def run_director_loop(self):
         """Autonomous time-slice scheduler driving smooth YouTube camera cinematography."""
         step = 1.0
-        # Initial jump and glide on startup
         time.sleep(1.0)
         self.snap_to_beacon("INIT")
         self.trigger_panoramic_glide(duration=3.5)
@@ -455,7 +508,7 @@ class ZulfikarCameraDirector:
                     self.cycle_hotspot(1, manual=False)
 
     def run_global_hotkey_listener(self):
-        """Windows 11 Global Hotkey Poller using GetAsyncKeyState."""
+        """Windows 11 Global Hotkey Poller using GetAsyncKeyState (conflict-free)."""
         if not IS_WINDOWS or not user32:
             return
 
@@ -469,11 +522,19 @@ class ZulfikarCameraDirector:
         while self.is_running:
             time.sleep(0.03)
 
-            # [Insert] or [G]: Toggle Window Guard ON/OFF
-            if check_pressed(VK_INSERT) or check_pressed(VK_G):
+            # [Insert]: Toggle Window Guard ON/OFF (clean hotkey, no clash with in-game G)
+            if check_pressed(VK_INSERT):
                 self.guard_enabled = not self.guard_enabled
                 state = "ENABLED (Auto-pauses on Alt-Tab)" if self.guard_enabled else "DISABLED (Continuous Broadcast Mode)"
                 log_event(f"Window Focus Guard {state}", "HOTKEY")
+
+            # [F9]: Bring AoE2 Window to Front
+            elif check_pressed(VK_F9):
+                ok = bring_aoe2_to_front()
+                if ok:
+                    log_event("AoE2:DE window brought to foreground!", "WINDOW")
+                else:
+                    log_event("AoE2:DE window not found. Please ensure game is running.", "WARNING")
 
             # [Num 1]: Toggle Auto-Director Hands-Free / Manual Co-Pilot
             elif check_pressed(VK_NUMPAD1):
@@ -490,7 +551,7 @@ class ZulfikarCameraDirector:
             elif check_pressed(VK_END) or check_pressed(VK_NUMPAD3):
                 self.trigger_chase_cam()
 
-            # [Space] or [Num 0]: Snap to Flare
+            # [Num 0]: Snap to Flare
             elif check_pressed(VK_NUMPAD0):
                 self.snap_to_beacon("MANUAL-HOTKEY")
 
@@ -523,13 +584,22 @@ class ZulfikarCameraDirector:
                 self.is_running = False
 
     def run_terminal_input_listener(self):
-        """Console input listener (type single letters or numbers)."""
+        """
+        Console input listener (type single letters or numbers).
+        Flushes buffer after each action to eliminate input storms and echoes.
+        """
         while self.is_running:
             try:
                 ch = None
                 if IS_WINDOWS:
                     if msvcrt.kbhit():
                         ch = msvcrt.getch().decode('utf-8', errors='ignore').lower()
+                        # Flush any remaining chars in buffer to prevent input loop storms
+                        while msvcrt.kbhit():
+                            try:
+                                msvcrt.getch()
+                            except Exception:
+                                break
                     else:
                         time.sleep(0.1)
                         continue
@@ -553,12 +623,18 @@ class ZulfikarCameraDirector:
                     self.trigger_panoramic_glide(duration=4.5)
                 elif ch in ('3', 'c'):
                     self.trigger_chase_cam()
-                elif ch in (' ', 's'):
+                elif ch in ('s', 'j'):
                     self.snap_to_beacon("TERMINAL")
                 elif ch in ('g', 'w'):
                     self.guard_enabled = not self.guard_enabled
                     state = "ENABLED" if self.guard_enabled else "DISABLED (Continuous Broadcast)"
                     log_event(f"Window Focus Guard {state}", "HOTKEY")
+                elif ch == 'f':
+                    ok = bring_aoe2_to_front()
+                    if ok:
+                        log_event("AoE2:DE window brought to foreground!", "WINDOW")
+                    else:
+                        log_event("AoE2:DE window not found. Please ensure game is running.", "WARNING")
                 elif ch == 'n':
                     self.cycle_hotspot(1, manual=True)
                 elif ch == 'b':
@@ -581,17 +657,19 @@ def print_welcome_banner(demo=False, guard_enabled=False):
   Window Guard:   {guard_text}
 --------------------------------------------------------------------------------
   \033[93mGLOBAL IN-GAME HOTKEYS\033[0m (Works directly while inside AoE2:DE on Windows 11):
-    \033[92m[Insert] or [G]\033[0m       Toggle Window Focus Guard ON / OFF
+    \033[92m[Insert]\033[0m              Toggle Window Focus Guard ON / OFF
+    \033[92m[F9]\033[0m                  Bring AoE2:DE Game Window to Foreground
     \033[92m[Num 1]\033[0m               Toggle Auto-Director ON / OFF (Hands-Free recording)
     \033[93m[Home]   or [Num 2]\033[0m   Execute Smooth Panoramic Camera Glide
     \033[95m[End]    or [Num 3]\033[0m   Lock Vanguard Chase-Cam (Ctrl + F Follow Cam)
-    \033[97m[Space]  or [Num 0]\033[0m   Snap Camera to Latest Battle Flare
+    \033[97m[Num 0]\033[0m               Snap Camera to Latest Battle Flare
     \033[97m[Num 4/6/8/5]\033[0m         Manual Glide Left / Right / Up / Down
     \033[97m[PageDown] / [PageUp]\033[0m Skip to Next / Previous Battle Hotspot
     \033[91m[Esc]    or [Q]\033[0m       Safe Exit
 
   \033[96mTERMINAL COMMANDS\033[0m (You can also type these directly into this console):
-    Type \033[97m'g'\033[0m (Toggle Focus Guard), \033[97m'1'\033[0m (Toggle), \033[97m'2'\033[0m (Glide), \033[97m'3'\033[0m (Chase), \033[97m'n'\033[0m (Next), \033[97m'q'\033[0m (Quit)
+    Type \033[97m'f'\033[0m (Focus AoE2), \033[97m'g'\033[0m (Toggle Guard), \033[97m'1'\033[0m (Toggle), \033[97m'2'\033[0m (Glide),
+    \033[97m'3'\033[0m (Chase), \033[97m's'\033[0m (Snap), \033[97m'n'\033[0m (Next), \033[97m'q'\033[0m (Quit)
 --------------------------------------------------------------------------------
 \033[90m[LIVE EVENT LOG - Screen will NOT flicker or wipe]:\033[0m
 """
@@ -609,6 +687,15 @@ def main():
 
     print_welcome_banner(demo=args.demo, guard_enabled=args.guard)
     director = ZulfikarCameraDirector(demo_mode=args.demo, default_dwell=args.dwell, guard_enabled=args.guard)
+
+    # Automatically detect and focus AoE2:DE window on startup if available
+    if IS_WINDOWS and not args.demo:
+        hwnd = find_aoe2_window()
+        if hwnd:
+            log_event(f"AoE2:DE window detected (HWND: {hex(hwnd)}). Bringing to foreground...", "WINDOW")
+            bring_aoe2_to_front()
+        else:
+            log_event("AoE2:DE window not detected yet. Start the match, or press 'f' in terminal to focus.", "WINDOW")
 
     # 1. Background autonomous director thread
     t_director = threading.Thread(target=director.run_director_loop, daemon=True)
