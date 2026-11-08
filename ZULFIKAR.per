@@ -261,32 +261,35 @@
     (disable-self)
 )
 
-; --- Rule 2: Town Sizing, Dropsites, Buffer & Aesthetics ---
+; --- Rule 2: Town Sizing, Concentric Urban Layout & Dropsite Clearance ---
 (defrule
     (true)
 =>
-    (set-strategic-number sn-minimum-town-size 10)
-    (set-strategic-number sn-maximum-town-size 16)
-    (set-strategic-number sn-safe-town-size 25)
-    (set-strategic-number sn-food-dropsite-distance 4)
-    (set-strategic-number sn-wood-dropsite-distance 4)
-    (set-strategic-number sn-gold-dropsite-distance 4)
-    (set-strategic-number sn-stone-dropsite-distance 4)
-    (set-strategic-number sn-dropsite-separation-distance 6)
-    (set-strategic-number sn-allow-adjacent-dropsites 0)
     (set-strategic-number sn-preferred-mill-placement 0)
-    (set-strategic-number sn-minimum-dropsite-buffer 5)
+    (set-strategic-number sn-minimum-town-size 7)
+    (set-strategic-number sn-maximum-town-size 14)
+    (set-strategic-number sn-safe-town-size 22)
+    (set-strategic-number sn-placement-zone-size 3)
+    (set-strategic-number sn-food-dropsite-distance 3)
+    (set-strategic-number sn-wood-dropsite-distance 4)
+    (set-strategic-number sn-gold-dropsite-distance 40)
+    (set-strategic-number sn-stone-dropsite-distance 3)
+    (set-strategic-number sn-maximum-gold-drop-distance 40)
+    (set-strategic-number sn-maximum-stone-drop-distance 40)
+    (set-strategic-number sn-dropsite-separation-distance 2)
+    (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (set-strategic-number sn-minimum-dropsite-buffer 1)
     (disable-self)
 )
 
-; --- Rule 3: Camp Distances, Queuing & Anti-Civilian Explorer ---
+; --- Rule 3: Broad Camp Distances, Dynamic Scouting & Queuing ---
 (defrule
     (true)
 =>
-    (set-strategic-number sn-camp-max-distance 35)
-    (set-strategic-number sn-mill-max-distance 25)
-    (set-strategic-number sn-lumber-camp-max-distance 35)
-    (set-strategic-number sn-mining-camp-max-distance 38)
+    (set-strategic-number sn-camp-max-distance 120)
+    (set-strategic-number sn-mill-max-distance 35)
+    (set-strategic-number sn-lumber-camp-max-distance 45)
+    (set-strategic-number sn-mining-camp-max-distance 120)
     (set-strategic-number sn-enable-training-queue 2)
     (set-strategic-number sn-enable-research-queue 1)
     (set-strategic-number sn-total-number-explorers 1)
@@ -294,8 +297,18 @@
     (set-strategic-number sn-cap-civilian-explorers 0)
     (set-strategic-number sn-percent-civilian-explorers 0)
     (set-strategic-number sn-minimum-civilian-explorers 0)
-    (set-strategic-number sn-home-exploration-time 260)
+    (set-strategic-number sn-home-exploration-time 480)
     (disable-self)
+)
+
+; Rule 3b: Exploration Assurance - Stay home scouting until Gold & Stone are discovered
+(defrule
+    (current-age <= dark-age)
+    (or (not (resource-found gold))
+        (not (resource-found stone)))
+    (game-time < 600)
+=>
+    (set-strategic-number sn-home-exploration-time 600)
 )
 
 ; --- Rule 4: Dark Age Economy, Builders, Boar Hunting & Repair ---
@@ -489,7 +502,6 @@
         (map-size small))
 =>
     (set-goal gl-map-size size-small)
-    (set-strategic-number sn-maximum-town-size 22)
     (set-strategic-number sn-sentry-distance 12)
     (set-strategic-number sn-defense-distance 14)
     (disable-self)
@@ -502,10 +514,10 @@
 =>
     (set-goal gl-map-size size-large)
     ; Scale exploration and camps outwards
-    (set-strategic-number sn-camp-max-distance 35)
-    (set-strategic-number sn-lumber-camp-max-distance 45)
-    (set-strategic-number sn-mining-camp-max-distance 45)
-    (set-strategic-number sn-home-exploration-time 450)
+    (set-strategic-number sn-camp-max-distance 150)
+    (set-strategic-number sn-lumber-camp-max-distance 100)
+    (set-strategic-number sn-mining-camp-max-distance 150)
+    (set-strategic-number sn-home-exploration-time 480)
     (disable-self)
 )
 
@@ -624,39 +636,42 @@
 ; ============================================================
 
 ; ------------------------------------------------------------
-; 1. DARK AGE MANPOWER (Opening Economy)
+; 1. DARK AGE MANPOWER (Opening Economy, Early Gold & Stone)
 ; ------------------------------------------------------------
 (defrule
     (current-age <= dark-age)
-    (food-amount < 480)
+    (unit-type-count-total villager < 14)
+    (food-amount < 350)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 65)
-    (set-strategic-number sn-wood-gatherer-percentage 35)
+    (set-strategic-number sn-food-gatherer-percentage 62)
+    (set-strategic-number sn-wood-gatherer-percentage 38)
     (set-strategic-number sn-gold-gatherer-percentage 0)
     (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
-; Transition to Feudal: Send 3-4 villagers to gold to bank for Feudal upgrades & military
+; Mid Dark Age (vills 14-17): Dispatch 3 villagers to Gold Mining immediately
 (defrule
     (current-age <= dark-age)
-    (food-amount >= 480)
+    (unit-type-count-total villager >= 14)
+    (unit-type-count-total villager < 18)
+    (food-amount < 350)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 50)
-    (set-strategic-number sn-wood-gatherer-percentage 36)
-    (set-strategic-number sn-gold-gatherer-percentage 14)
+    (set-strategic-number sn-food-gatherer-percentage 55)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 15)
     (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
-; Build Mining Camp #1 (Gold) during Feudal transit
+; Late Dark Age (vills >= 18 or food >= 350): Dispatch gatherers to BOTH Gold & Stone!
 (defrule
     (current-age <= dark-age)
-    (food-amount >= 480)
-    (building-type-count-total mining-camp < 1)
-    (can-build mining-camp)
+    (or (unit-type-count-total villager >= 18)
+        (food-amount >= 350))
 =>
-    (set-strategic-number sn-camp-max-distance 35)
-    (set-strategic-number sn-mining-camp-max-distance 38)
-    (build mining-camp)
+    (set-strategic-number sn-food-gatherer-percentage 46)
+    (set-strategic-number sn-wood-gatherer-percentage 28)
+    (set-strategic-number sn-gold-gatherer-percentage 14)
+    (set-strategic-number sn-stone-gatherer-percentage 12)
 )
 
 ; ------------------------------------------------------------
@@ -845,10 +860,10 @@
     (current-age >= imperial-age)
     (gold-amount < 150)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 52)
-    (set-strategic-number sn-wood-gatherer-percentage 43)
-    (set-strategic-number sn-gold-gatherer-percentage 5)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-gold-gatherer-percentage 30)
+    (set-strategic-number sn-food-gatherer-percentage 40)
+    (set-strategic-number sn-wood-gatherer-percentage 22)
+    (set-strategic-number sn-stone-gatherer-percentage 8)
 )
 
 (defrule
@@ -1078,6 +1093,60 @@
     (build farm)
 )
 
+; Mining Camp #1 (Gold) in Mid Dark Age (villagers >= 14)
+(defrule
+    (current-age <= dark-age)
+    (unit-type-count-total villager >= 14)
+    (building-type-count-total lumber-camp >= 1)
+    (building-type-count-total mill >= 1)
+    (building-type-count-total mining-camp < 1)
+=>
+    (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (set-strategic-number sn-camp-max-distance 120)
+    (set-strategic-number sn-mining-camp-max-distance 120)
+    (set-strategic-number sn-maximum-gold-drop-distance 40)
+    (set-strategic-number sn-stone-dropsite-distance 3)
+    (set-strategic-number sn-gold-dropsite-distance 40)
+)
+
+(defrule
+    (current-age <= dark-age)
+    (unit-type-count-total villager >= 14)
+    (building-type-count-total lumber-camp >= 1)
+    (building-type-count-total mill >= 1)
+    (building-type-count-total mining-camp < 1)
+    (can-build mining-camp)
+=>
+    (build mining-camp)
+    (chat-to-all "ZULFIKAR: Gold Mining Camp established in Dark Age.")
+)
+
+; Mining Camp #2 (Stone) in Late Dark Age (villagers >= 18 or food >= 350)
+(defrule
+    (current-age <= dark-age)
+    (or (unit-type-count-total villager >= 18)
+        (food-amount >= 350))
+    (building-type-count-total mining-camp == 1)
+=>
+    (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (set-strategic-number sn-camp-max-distance 120)
+    (set-strategic-number sn-mining-camp-max-distance 120)
+    (set-strategic-number sn-maximum-stone-drop-distance 40)
+    (set-strategic-number sn-gold-dropsite-distance 3)
+    (set-strategic-number sn-stone-dropsite-distance 40)
+)
+
+(defrule
+    (current-age <= dark-age)
+    (or (unit-type-count-total villager >= 18)
+        (food-amount >= 350))
+    (building-type-count-total mining-camp == 1)
+    (can-build mining-camp)
+=>
+    (build mining-camp)
+    (chat-to-all "ZULFIKAR: Stone Quarry Camp established in Dark Age.")
+)
+
 ; Barracks in late Dark Age (for open maps or non-FC styles)
 (defrule
     (current-age <= dark-age)
@@ -1105,6 +1174,10 @@
     (can-research feudal-age)
 =>
     (research feudal-age)
+    (set-strategic-number sn-gold-gatherer-percentage 16)
+    (set-strategic-number sn-stone-gatherer-percentage 12)
+    (set-strategic-number sn-camp-max-distance 120)
+    (set-strategic-number sn-mining-camp-max-distance 120)
     (chat-to-all "ZULFIKAR: Advancing to Feudal Age.")
 )
 ; ============================================================
@@ -1178,47 +1251,77 @@
     (research ri-wheel-barrow)
 )
 
-; Feudal Town Sizing & Compact Urban Growth
+; Feudal Town Sizing, Concentric Farm Core & Square House Ring
 (defrule
     (current-age == feudal-age)
 =>
-    (set-strategic-number sn-minimum-town-size 14)
-    (set-strategic-number sn-maximum-town-size 24)
+    (set-strategic-number sn-preferred-mill-placement 0)
+    (set-strategic-number sn-food-dropsite-distance 3)
+    (set-strategic-number sn-minimum-town-size 8)
+    (set-strategic-number sn-maximum-town-size 18)
     (set-strategic-number sn-placement-zone-size 3)
-    (set-strategic-number sn-camp-max-distance 38)
-    (set-strategic-number sn-mining-camp-max-distance 42)
+    (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (set-strategic-number sn-dropsite-separation-distance 2)
+    (set-strategic-number sn-camp-max-distance 120)
+    (set-strategic-number sn-mining-camp-max-distance 120)
+    (set-strategic-number sn-maximum-gold-drop-distance 40)
+    (set-strategic-number sn-maximum-stone-drop-distance 40)
     (disable-self)
 )
 
+; Gold Mining Camp Preparation & Build (Camp #1 Fallback)
 (defrule
     (current-age >= feudal-age)
-    (building-type-count-total lumber-camp < 2)
-    (resource-found wood)
-    (can-build lumber-camp)
+    (building-type-count-total mining-camp < 1)
 =>
-    (build lumber-camp)
+    (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (set-strategic-number sn-camp-max-distance 120)
+    (set-strategic-number sn-mining-camp-max-distance 120)
+    (set-strategic-number sn-maximum-gold-drop-distance 40)
+    (set-strategic-number sn-stone-dropsite-distance 3)
+    (set-strategic-number sn-gold-dropsite-distance 40)
 )
 
-; Gold Mining Camp
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total mining-camp < 1)
     (can-build mining-camp)
 =>
-    (set-strategic-number sn-camp-max-distance 38)
-    (set-strategic-number sn-mining-camp-max-distance 42)
     (build mining-camp)
+    (chat-to-all "ZULFIKAR: Feudal Gold Mining Camp founded.")
 )
 
-; Stone Mining Camp (Begins early stone accumulation for Citadel & Walls)
+; Stone Mining Camp Preparation & Build (Camp #2: Stone Quarry)
 (defrule
     (current-age >= feudal-age)
-    (building-type-count-total mining-camp < 2)
+    (building-type-count-total mining-camp == 1)
+=>
+    (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (set-strategic-number sn-camp-max-distance 120)
+    (set-strategic-number sn-mining-camp-max-distance 120)
+    (set-strategic-number sn-maximum-stone-drop-distance 40)
+    (set-strategic-number sn-gold-dropsite-distance 3)
+    (set-strategic-number sn-stone-dropsite-distance 40)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total mining-camp == 1)
     (can-build mining-camp)
 =>
-    (set-strategic-number sn-camp-max-distance 42)
-    (set-strategic-number sn-mining-camp-max-distance 46)
     (build mining-camp)
+    (chat-to-all "ZULFIKAR: Feudal Stone Quarry Camp founded.")
+)
+
+; Lumber Camp #2: Secondary Woodline (After Gold & Stone Camps are secured)
+(defrule
+    (current-age >= feudal-age)
+    (building-type-count-total mining-camp >= 2)
+    (building-type-count-total lumber-camp < 2)
+    (resource-found wood)
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
 )
 
 (defrule
@@ -1290,6 +1393,8 @@
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total barracks < 1)
+    (or (building-type-count-total mining-camp >= 2)
+        (wood-amount >= 275))
     (can-build barracks)
 =>
     (build barracks)
@@ -1298,6 +1403,8 @@
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total blacksmith < 1)
+    (or (building-type-count-total mining-camp >= 2)
+        (wood-amount >= 250))
     (can-build blacksmith)
 =>
     (build blacksmith)
@@ -1453,8 +1560,11 @@
     (building-type-count-total mining-camp < 2)
     (can-build mining-camp)
 =>
-    (set-strategic-number sn-camp-max-distance 50)
-    (set-strategic-number sn-mining-camp-max-distance 55)
+    (set-strategic-number sn-allow-adjacent-dropsites 1)
+    (set-strategic-number sn-camp-max-distance 150)
+    (set-strategic-number sn-mining-camp-max-distance 150)
+    (set-strategic-number sn-maximum-gold-drop-distance 40)
+    (set-strategic-number sn-maximum-stone-drop-distance 40)
     (build mining-camp)
 )
 
@@ -1468,37 +1578,58 @@
     (build farm)
 )
 
-; Castle Town Sizing & Active Map Scouting
+; Castle Town Sizing, Active Map Scouting & Extended Camps
 (defrule
     (current-age == castle-age)
 =>
-    (set-strategic-number sn-minimum-town-size 20)
-    (set-strategic-number sn-maximum-town-size 35)
-    (set-strategic-number sn-placement-zone-size 4)
+    (set-strategic-number sn-preferred-mill-placement 0)
+    (set-strategic-number sn-food-dropsite-distance 3)
+    (set-strategic-number sn-minimum-town-size 10)
+    (set-strategic-number sn-maximum-town-size 26)
+    (set-strategic-number sn-placement-zone-size 3)
     (set-strategic-number sn-total-number-explorers 2)
-    (set-strategic-number sn-camp-max-distance 50)
-    (set-strategic-number sn-mining-camp-max-distance 55)
+    (set-strategic-number sn-camp-max-distance 150)
+    (set-strategic-number sn-mining-camp-max-distance 150)
+    (set-strategic-number sn-maximum-gold-drop-distance 40)
+    (set-strategic-number sn-maximum-stone-drop-distance 40)
     (set-strategic-number sn-relic-return-distance 500)
     (disable-self)
 )
 
-; Castles: 1st Citadel at 650 stone, 2nd expansion castle
+; Castles: Interlocking Multi-Citadel Defense Network
+; Castle #1: Home Citadel anchor (covers Town Center & concentric farm core)
 (defrule
     (current-age >= castle-age)
     (building-type-count-total castle < 1)
     (can-build castle)
 =>
+    (set-strategic-number sn-maximum-town-size 18)
     (build castle)
     (chat-to-all "ZULFIKAR: The Citadel rises! Fortress established.")
 )
 
+; Castle #2: Supporting Bastion with interlocking arrow fire coverage (~14-18 tiles from Castle 1)
 (defrule
     (current-age >= castle-age)
-    (building-type-count-total castle < 2)
+    (building-type-count-total castle == 1)
     (can-build castle)
 =>
-    (build castle)
-    (chat-to-all "ZULFIKAR: Fortress expanding. Second Castle founded.")
+    (set-strategic-number sn-maximum-town-size 30)
+    (build-forward castle)
+    (chat-to-all "ZULFIKAR: Second Castle founded with interlocking arrow fire support!")
+)
+
+; Castle #3 & #4: Expanding fortified bastion network with mutual arrow coverage
+(defrule
+    (current-age >= castle-age)
+    (building-type-count-total castle >= 2)
+    (building-type-count-total castle < 4)
+    (stone-amount >= 650)
+    (can-build castle)
+=>
+    (set-strategic-number sn-maximum-town-size 42)
+    (build-forward castle)
+    (chat-to-all "ZULFIKAR: Expanding fortified bastion network with mutual arrow coverage.")
 )
 
 ; Stone Walls & Stone Gates (Continuous perimeter reinforcement)
@@ -1794,11 +1925,13 @@
 
 (defrule
     (current-age >= imperial-age)
-    (building-type-count-total castle < 4)
+    (building-type-count-total castle < 6)
     (stone-amount >= 650)
     (can-build castle)
 =>
-    (build castle)
+    (set-strategic-number sn-maximum-town-size 45)
+    (build-forward castle)
+    (chat-to-all "ZULFIKAR: Imperial Bastion founded with overlapping defensive coverage.")
 )
 
 ; Mega-Bank / Death Match: Fortify with up to 8 Castles
@@ -1809,7 +1942,8 @@
     (building-type-count-total castle < 8)
     (can-build castle)
 =>
-    (build castle)
+    (set-strategic-number sn-maximum-town-size 55)
+    (build-forward castle)
 )
 
 ; Mega-Bank / Death Match: Rapid House Spamming
