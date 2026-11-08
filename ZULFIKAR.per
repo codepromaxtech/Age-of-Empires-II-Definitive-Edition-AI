@@ -1766,7 +1766,7 @@
     (goal gl-attack-status 0)
 =>
     (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-defense-distance 25)
+    (set-strategic-number sn-defense-distance 44)
 )
 
 ; Siege Workshop
@@ -3177,31 +3177,55 @@
 ; SECTION 13: COMBAT LOGIC, RETALIATION & COHESIVE ATTACKS
 ; ============================================================
 
-; --- CONTINUOUS REGROUPING & HEALING DISCIPLINE (Base Camp Sanctuary) ---
-; When not on an active offensive wave (gl-attack-status == 0), ALL military units
-; MUST remain at home under Citadel / Castle arrow protection and near Monks.
-; CRITICAL FIX: sn-task-ungrouped-soldiers is set to 0 and sn-percent-attack-soldiers to 0!
-; This 100% PREVENTS single soldiers from trickling out individually and getting wiped out!
+; --- PEACETIME SANCTUARY & PERIMETER DEFENSE (Base Camp) ---
+; When not on an active offensive wave (gl-attack-status == 0), military units
+; remain at base under Citadel / Castle arrow protection and near Monks for healing.
+; sn-percent-attack-soldiers 0 and sn-number-attack-groups 0 strictly PREVENTS single-unit trickling.
+; sn-task-ungrouped-soldiers 1 empowers all idle soldiers to actively defend lumberjacks, miners, and farms!
 (defrule
     (goal gl-attack-status 0)
     (not (town-under-attack))
 =>
     (set-strategic-number sn-number-attack-groups 0)
     (set-strategic-number sn-percent-attack-soldiers 0)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-defense-distance 22)
-    (set-strategic-number sn-enemy-sighted-response-distance 15)
+    (set-strategic-number sn-enemy-sighted-response-distance 28)
+)
+
+; Dynamic age-scaled defense distance so outer economic outposts are never left undefended
+(defrule
+    (goal gl-attack-status 0)
+    (current-age <= feudal-age)
+    (not (town-under-attack))
+=>
+    (set-strategic-number sn-defense-distance 32)
+)
+
+(defrule
+    (goal gl-attack-status 0)
+    (current-age == castle-age)
+    (not (town-under-attack))
+=>
+    (set-strategic-number sn-defense-distance 44)
+)
+
+(defrule
+    (goal gl-attack-status 0)
+    (current-age >= imperial-age)
+    (not (town-under-attack))
+=>
+    (set-strategic-number sn-defense-distance 60)
 )
 
 ; --- ANTI-BOTTLENECK TARGET DISPERSAL PULSE ---
 ; Every 15 seconds during active combat, dynamically pulse target evaluations
-; to break army clumping. Ungrouped soldiers stay at base (0) - no trickle march!
+; to break army clumping. Active ungrouped soldiers fight cohesively.
 (defrule
     (goal gl-attack-status 1)
     (timer-triggered gl-dispersal-timer)
 =>
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-enable-patrol-attack 1)
     (set-strategic-number sn-target-evaluation-randomness 300)
     (set-strategic-number sn-target-evaluation-in-progress -160)
@@ -3210,24 +3234,26 @@
     (enable-timer gl-dispersal-timer 15)
 )
 
-; --- COHESIVE ATTACK WAVES (ONLY LAUNCHED TOGETHER WHEN REGROUPED & HEALED) ---
+; --- COHESIVE ATTACK WAVES (SYNCHRONIZED OFFENSIVE FORMATIONS) ---
 
-; Feudal Harass (Multi-Squad Raiding: 2 squads moving out together after regrouping)
+; 1. Feudal Harass (Multi-Squad Raiding: 2 squads moving out together)
 (defrule
     (goal gl-map-style style-open)
     (current-age >= feudal-age)
     (current-age < castle-age)
     (goal gl-attack-status 0)
-    (timer-triggered gl-regroup-timer)
-    (military-population >= 10)
-    (not (town-under-attack))
+    (military-population >= 8)
+    (or (timer-triggered gl-regroup-timer)
+        (military-population >= 14))
+    (or (not (town-under-attack))
+        (players-military-population any-enemy < 3))
 =>
     (set-goal gl-attack-status 1)
     (set-strategic-number sn-number-attack-groups 2)
-    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-minimum-attack-group-size 3)
     (set-strategic-number sn-maximum-attack-group-size 8)
     (set-strategic-number sn-percent-attack-soldiers 80)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-group-form-distance 20)
     (set-strategic-number sn-target-evaluation-randomness 250)
     (set-strategic-number sn-target-evaluation-in-progress -120)
@@ -3239,21 +3265,24 @@
     (chat-to-all "ZULFIKAR: Coordinated Feudal strike force moving out!")
 )
 
-; Castle Age Wave Assault (Synchronized 5-squad formation launched after healing)
+; 2. Castle Age Strike Force (Synchronized 4-squad formation)
 (defrule
     (current-age >= castle-age)
     (current-age < imperial-age)
     (goal gl-attack-status 0)
-    (timer-triggered gl-regroup-timer)
-    (military-population >= 22)
-    (not (town-under-attack))
+    (military-population >= 16)
+    (military-population < 28)
+    (or (timer-triggered gl-regroup-timer)
+        (military-population >= 22))
+    (or (not (town-under-attack))
+        (players-military-population any-enemy < 4))
 =>
     (set-goal gl-attack-status 1)
-    (set-strategic-number sn-number-attack-groups 5)
-    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-number-attack-groups 4)
+    (set-strategic-number sn-minimum-attack-group-size 3)
     (set-strategic-number sn-maximum-attack-group-size 10)
     (set-strategic-number sn-percent-attack-soldiers 85)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-group-form-distance 25)
     (set-strategic-number sn-target-evaluation-randomness 300)
     (set-strategic-number sn-target-evaluation-in-progress -160)
@@ -3262,24 +3291,80 @@
     (up-send-flare gl-flare-x)
     (attack-now)
     (enable-timer gl-attack-duration-timer 50)
-    (chat-to-all "ZULFIKAR: Fully healed and regrouped Castle Age strike force moving out!")
+    (chat-to-all "ZULFIKAR: Fully healed Castle Age strike force moving out!")
 )
 
-; Imperial Age Deathball Assault (8 synchronized squads launched in formation)
+; 3. Castle Age Heavy Offensive (6 synchronized squads)
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (goal gl-attack-status 0)
+    (military-population >= 28)
+    (or (not (town-under-attack))
+        (players-military-population any-enemy < 4))
+=>
+    (set-goal gl-attack-status 1)
+    (set-strategic-number sn-number-attack-groups 6)
+    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-maximum-attack-group-size 12)
+    (set-strategic-number sn-percent-attack-soldiers 90)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
+    (set-strategic-number sn-group-form-distance 25)
+    (set-strategic-number sn-target-evaluation-randomness 300)
+    (set-strategic-number sn-target-evaluation-in-progress -160)
+    (set-strategic-number sn-target-evaluation-attack-attempts -100)
+    (up-get-point position-target gl-flare-x)
+    (up-send-flare gl-flare-x)
+    (attack-now)
+    (enable-timer gl-attack-duration-timer 55)
+    (chat-to-all "ZULFIKAR: Overwhelming Castle Age army advancing across all sectors!")
+)
+
+; 4. Imperial Age Vanguard Assault (6 synchronized squads with siege vanguard)
 (defrule
     (current-age >= imperial-age)
     (goal gl-attack-status 0)
-    (timer-triggered gl-regroup-timer)
-    (military-population >= 45)
+    (military-population >= 24)
+    (military-population < 42)
+    (or (timer-triggered gl-regroup-timer)
+        (military-population >= 32))
+    (or (not (town-under-attack))
+        (players-military-population any-enemy < 5))
+=>
+    (set-goal gl-attack-status 1)
+    (set-strategic-number sn-number-attack-groups 6)
+    (set-strategic-number sn-minimum-attack-group-size 4)
+    (set-strategic-number sn-maximum-attack-group-size 12)
+    (set-strategic-number sn-percent-attack-soldiers 85)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
+    (set-strategic-number sn-group-form-distance 28)
+    (set-strategic-number sn-target-evaluation-randomness 320)
+    (set-strategic-number sn-target-evaluation-in-progress -160)
+    (set-strategic-number sn-target-evaluation-attack-attempts -100)
+    (up-get-point position-target gl-flare-x)
+    (up-send-flare gl-flare-x)
+    (attack-now)
+    (enable-timer gl-attack-duration-timer 55)
+    (chat-to-all "ZULFIKAR: Imperial vanguard with Trebuchets advancing on enemy sector!")
+)
+
+; 5. Imperial Age Deathball Assault (8 synchronized squads in broad formation)
+(defrule
+    (current-age >= imperial-age)
+    (goal gl-attack-status 0)
+    (military-population >= 42)
     (military-population < 65)
-    (not (town-under-attack))
+    (or (timer-triggered gl-regroup-timer)
+        (military-population >= 50))
+    (or (not (town-under-attack))
+        (players-military-population any-enemy < 5))
 =>
     (set-goal gl-attack-status 1)
     (set-strategic-number sn-number-attack-groups 8)
     (set-strategic-number sn-minimum-attack-group-size 5)
     (set-strategic-number sn-maximum-attack-group-size 15)
-    (set-strategic-number sn-percent-attack-soldiers 85)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-percent-attack-soldiers 90)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-group-form-distance 30)
     (set-strategic-number sn-target-evaluation-randomness 350)
     (set-strategic-number sn-target-evaluation-in-progress -180)
@@ -3287,24 +3372,24 @@
     (up-get-point position-target gl-flare-x)
     (up-send-flare gl-flare-x)
     (attack-now)
-    (enable-timer gl-attack-duration-timer 55)
+    (enable-timer gl-attack-duration-timer 60)
     (chat-to-all "ZULFIKAR: Fully reinforced Imperial Deathball launching coordinated offensive!")
 )
 
-; Imperial Age Grand Frontline Saturation Assault (12 synchronized squads)
+; 6. Imperial Age Grand Frontline Saturation Assault (12 synchronized squads)
 (defrule
     (current-age >= imperial-age)
     (goal gl-attack-status 0)
-    (timer-triggered gl-regroup-timer)
     (military-population >= 65)
-    (not (town-under-attack))
+    (or (not (town-under-attack))
+        (players-military-population any-enemy < 6))
 =>
     (set-goal gl-attack-status 1)
     (set-strategic-number sn-number-attack-groups 12)
     (set-strategic-number sn-minimum-attack-group-size 5)
     (set-strategic-number sn-maximum-attack-group-size 18)
-    (set-strategic-number sn-percent-attack-soldiers 90)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-percent-attack-soldiers 95)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-group-form-distance 35)
     (set-strategic-number sn-target-evaluation-randomness 400)
     (set-strategic-number sn-target-evaluation-in-progress -220)
@@ -3312,35 +3397,45 @@
     (up-get-point position-target gl-flare-x)
     (up-send-flare gl-flare-x)
     (attack-now)
-    (enable-timer gl-attack-duration-timer 60)
+    (enable-timer gl-attack-duration-timer 65)
     (chat-to-all "ZULFIKAR: Maximum Grand Army saturation assault unleashed across all fronts!")
 )
 
-; --- THREAT-MATCHED DEFENSIVE INTERCEPTION MATRIX ---
-; Instead of mindlessly rallying 100% of all troops to every raid,
-; ZULFIKAR analyzes the threat type and dispatches the exact hard counter
-; while maintaining reserves so it never falls for decoy raids.
+; --- THREAT-MATCHED HOME DEFENSE & INTERCEPTION MATRIX ---
+; When attacked, ZULFIKAR mobilizes all forces with wide defense distance (75 tiles)
+; and high response distance (38 tiles) to aggressively hunt down and eliminate invaders.
 
-; --- 1. MINOR HARASSMENT: Decoy / Small Raid (< 6 enemy military) ---
-; Anti-Baiting: Deploy an agile 2-squad counter, keeping main army in reserve!
+; Universal Base Defense Mobilization:
 (defrule
     (town-under-attack)
-    (players-military-population any-enemy < 6)
-    (military-population >= 4)
+=>
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
+    (set-strategic-number sn-gather-defense-units 0)
+    (set-strategic-number sn-defense-distance 75)
+    (set-strategic-number sn-enemy-sighted-response-distance 38)
+    (set-strategic-number sn-sentry-distance 45)
+    (set-strategic-number sn-maximum-town-size 75)
+)
+
+; 1. MINOR HARASSMENT: Decoy / Small Raid (< 5 enemy military)
+(defrule
+    (town-under-attack)
+    (players-military-population any-enemy < 5)
+    (military-population >= 2)
 =>
     (set-strategic-number sn-number-attack-groups 2)
     (set-strategic-number sn-minimum-attack-group-size 2)
     (set-strategic-number sn-maximum-attack-group-size 6)
-    (set-strategic-number sn-percent-attack-soldiers 40)
+    (set-strategic-number sn-percent-attack-soldiers 50)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-target-evaluation-in-progress -100)
-    (set-strategic-number sn-maximum-town-size 45)
+    (set-strategic-number sn-maximum-town-size 60)
     (up-get-point position-center gl-flare-x)
     (up-send-flare gl-flare-x)
     (attack-now)
 )
 
-; --- 2. THREAT: ENEMY CAVALRY RAID (Scouts / Knights / Camels) ---
-; Dispatch anti-cavalry response: Spearmen/Pikemen/Halberdiers & Camels intercept
+; 2. THREAT: ENEMY CAVALRY RAID (Scouts / Knights / Camels)
 (defrule
     (town-under-attack)
     (or (players-unit-type-count any-enemy knight-line >= 1)
@@ -3351,18 +3446,18 @@
     (set-strategic-number sn-number-attack-groups 3)
     (set-strategic-number sn-minimum-attack-group-size 3)
     (set-strategic-number sn-maximum-attack-group-size 10)
-    (set-strategic-number sn-percent-attack-soldiers 65)
+    (set-strategic-number sn-percent-attack-soldiers 75)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-target-evaluation-in-progress -120)
     (set-strategic-number sn-target-evaluation-randomness 250)
-    (set-strategic-number sn-maximum-town-size 50)
+    (set-strategic-number sn-maximum-town-size 65)
     (up-get-point position-center gl-flare-x)
     (up-send-flare gl-flare-x)
     (attack-now)
     (chat-local-to-self "ZULFIKAR: Cavalry raid! Intercepting with anti-cavalry squads.")
 )
 
-; --- 3. THREAT: ENEMY ARCHER / RANGED RAID ---
-; Dispatch high pierce armor & skirmishers: Skirmishers, Knights, Mangonels
+; 3. THREAT: ENEMY ARCHER / RANGED RAID
 (defrule
     (town-under-attack)
     (or (players-unit-type-count any-enemy archer-line >= 2)
@@ -3374,18 +3469,18 @@
     (set-strategic-number sn-number-attack-groups 3)
     (set-strategic-number sn-minimum-attack-group-size 3)
     (set-strategic-number sn-maximum-attack-group-size 12)
-    (set-strategic-number sn-percent-attack-soldiers 70)
+    (set-strategic-number sn-percent-attack-soldiers 75)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-target-evaluation-in-progress -120)
     (set-strategic-number sn-target-evaluation-randomness 250)
-    (set-strategic-number sn-maximum-town-size 50)
+    (set-strategic-number sn-maximum-town-size 65)
     (up-get-point position-center gl-flare-x)
     (up-send-flare gl-flare-x)
     (attack-now)
     (chat-local-to-self "ZULFIKAR: Archer raid! Deploying skirmishers and cavalry squads.")
 )
 
-; --- 4. THREAT: ENEMY SIEGE PUSH (Mangonels / Rams / Trebuchets) ---
-; Priority: Mobile cavalry (Scouts, Knights, Hussars) flank and snipe siege weapons!
+; 4. THREAT: ENEMY SIEGE PUSH (Mangonels / Rams / Trebuchets)
 (defrule
     (town-under-attack)
     (or (players-unit-type-count any-enemy mangonel-line >= 1)
@@ -3394,33 +3489,34 @@
     (or (unit-type-count-total scout-cavalry-line >= 2)
         (unit-type-count-total knight-line >= 2))
 =>
-    (set-strategic-number sn-number-attack-groups 3)
+    (set-strategic-number sn-number-attack-groups 4)
     (set-strategic-number sn-minimum-attack-group-size 3)
     (set-strategic-number sn-maximum-attack-group-size 12)
-    (set-strategic-number sn-percent-attack-soldiers 70)
+    (set-strategic-number sn-percent-attack-soldiers 80)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-target-evaluation-in-progress -120)
     (set-strategic-number sn-target-evaluation-randomness 250)
-    (set-strategic-number sn-maximum-town-size 65)
+    (set-strategic-number sn-maximum-town-size 70)
     (up-get-point position-center gl-flare-x)
     (up-send-flare gl-flare-x)
     (attack-now)
     (chat-local-to-self "ZULFIKAR: Enemy siege detected! Cavalry squads charging siege engines!")
 )
 
-; --- 5. MAJOR INVASION / TOWN BREACH (Enemy army >= 6 entering base) ---
-; Existential threat: Mobilize full fortress defense distributed across 6 combat groups!
+; 5. MAJOR INVASION / TOWN BREACH (Enemy army >= 5 entering base)
 (defrule
     (town-under-attack)
-    (players-military-population any-enemy >= 6)
-    (military-population >= 6)
+    (players-military-population any-enemy >= 5)
+    (military-population >= 4)
 =>
     (set-strategic-number sn-number-attack-groups 6)
-    (set-strategic-number sn-minimum-attack-group-size 4)
-    (set-strategic-number sn-maximum-attack-group-size 15)
+    (set-strategic-number sn-minimum-attack-group-size 3)
+    (set-strategic-number sn-maximum-attack-group-size 20)
     (set-strategic-number sn-percent-attack-soldiers 100)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-target-evaluation-in-progress -150)
     (set-strategic-number sn-target-evaluation-randomness 300)
-    (set-strategic-number sn-maximum-town-size 70)
+    (set-strategic-number sn-maximum-town-size 75)
     (up-get-point position-center gl-flare-x)
     (up-send-flare gl-flare-x)
     (attack-now)
@@ -3439,71 +3535,71 @@
     (set-goal gl-attack-status 0)
     (set-strategic-number sn-number-attack-groups 0)
     (set-strategic-number sn-percent-attack-soldiers 0)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-defense-distance 22)
+    (set-strategic-number sn-defense-distance 50)
     (up-retreat-now)
     (disable-timer gl-regroup-timer)
-    (enable-timer gl-regroup-timer 45)
+    (enable-timer gl-regroup-timer 20)
     (chat-to-all "ZULFIKAR: Attack wave complete. Forces falling back to Citadel to regroup and heal.")
 )
 
-; 2. Tactical Retreat on Casualties (Feudal Age): Military < 5
+; 2. Tactical Retreat on Casualties (Feudal Age): Military < 4
 (defrule
     (goal gl-attack-status 1)
     (current-age >= feudal-age)
     (current-age < castle-age)
-    (military-population < 5)
+    (military-population < 4)
     (not (town-under-attack))
 =>
     (set-goal gl-attack-status 0)
     (set-strategic-number sn-number-attack-groups 0)
     (set-strategic-number sn-percent-attack-soldiers 0)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-defense-distance 22)
+    (set-strategic-number sn-defense-distance 35)
     (up-retreat-now)
     (disable-timer gl-regroup-timer)
-    (enable-timer gl-regroup-timer 40)
+    (enable-timer gl-regroup-timer 18)
     (chat-to-all "ZULFIKAR: Feudal squad taking casualties. Falling back to base to regroup and heal.")
 )
 
-; 3. Tactical Retreat on Casualties (Castle Age): Military < 12
+; 3. Tactical Retreat on Casualties (Castle Age): Military < 8
 (defrule
     (goal gl-attack-status 1)
     (current-age >= castle-age)
     (current-age < imperial-age)
-    (military-population < 12)
+    (military-population < 8)
     (not (town-under-attack))
 =>
     (set-goal gl-attack-status 0)
     (set-strategic-number sn-number-attack-groups 0)
     (set-strategic-number sn-percent-attack-soldiers 0)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-defense-distance 22)
+    (set-strategic-number sn-defense-distance 45)
     (up-retreat-now)
     (disable-timer gl-regroup-timer)
-    (enable-timer gl-regroup-timer 45)
+    (enable-timer gl-regroup-timer 20)
     (chat-to-all "ZULFIKAR: Forces taking damage. Disengaging to fortress to heal and reinforce.")
 )
 
-; 4. Tactical Retreat on Casualties (Imperial Age): Military < 22
+; 4. Tactical Retreat on Casualties (Imperial Age): Military < 15
 (defrule
     (goal gl-attack-status 1)
     (current-age >= imperial-age)
-    (military-population < 22)
+    (military-population < 15)
     (not (town-under-attack))
 =>
     (set-goal gl-attack-status 0)
     (set-strategic-number sn-number-attack-groups 0)
     (set-strategic-number sn-percent-attack-soldiers 0)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-defense-distance 22)
+    (set-strategic-number sn-defense-distance 60)
     (up-retreat-now)
     (disable-timer gl-regroup-timer)
-    (enable-timer gl-regroup-timer 45)
+    (enable-timer gl-regroup-timer 20)
     (chat-to-all "ZULFIKAR: Vanguard depleted. Falling back to Citadel crossfire to regroup and heal.")
 )
 
@@ -3516,27 +3612,28 @@
     (set-goal gl-attack-status 0)
     (set-strategic-number sn-number-attack-groups 0)
     (set-strategic-number sn-percent-attack-soldiers 0)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
     (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-defense-distance 22)
+    (set-strategic-number sn-defense-distance 50)
     (up-retreat-now)
     (disable-timer gl-regroup-timer)
-    (enable-timer gl-regroup-timer 35)
+    (enable-timer gl-regroup-timer 15)
     (chat-to-all "ZULFIKAR: Enemy sector neutralized! Returning to base to regroup and heal before next assault.")
 )
 
-; 6. Base Under Attack: Recall army from frontline to eliminate base invaders
+; 6. Base Under Attack: Recall frontline army to eliminate base invaders
 (defrule
     (goal gl-attack-status 1)
     (town-under-attack)
-    (players-military-population any-enemy >= 6)
+    (players-military-population any-enemy >= 5)
 =>
     (set-goal gl-attack-status 0)
     (set-strategic-number sn-number-attack-groups 0)
     (set-strategic-number sn-percent-attack-soldiers 0)
-    (set-strategic-number sn-task-ungrouped-soldiers 0)
-    (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-defense-distance 22)
+    (set-strategic-number sn-task-ungrouped-soldiers 1)
+    (set-strategic-number sn-gather-defense-units 0)
+    (set-strategic-number sn-defense-distance 75)
+    (set-strategic-number sn-enemy-sighted-response-distance 38)
     (up-retreat-now)
     (chat-to-all "ZULFIKAR: Citadel under attack! Recalling army home immediately to eliminate invaders.")
 )
