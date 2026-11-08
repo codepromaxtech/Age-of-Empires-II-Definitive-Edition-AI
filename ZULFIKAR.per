@@ -296,31 +296,35 @@
     (set-strategic-number sn-enable-research-queue 1)
     (set-strategic-number sn-total-number-explorers 1)
     (set-strategic-number sn-number-explore-groups 1)
+    (set-strategic-number sn-initial-exploration-required 0)
     (set-strategic-number sn-cap-civilian-explorers 0)
     (set-strategic-number sn-percent-civilian-explorers 0)
     (set-strategic-number sn-minimum-civilian-explorers 0)
-    (set-strategic-number sn-home-exploration-time 480)
+    (set-strategic-number sn-home-exploration-time 20)
     (disable-self)
 )
 
-; Rule 3b: Exploration Assurance - Stay home scouting until Gold & Stone are discovered
+; Rule 3b: Exploration Assurance - Scout Cavalry freely explores the map
 (defrule
     (current-age <= dark-age)
-    (or (not (resource-found gold))
-        (not (resource-found stone)))
-    (game-time < 600)
 =>
-    (set-strategic-number sn-home-exploration-time 600)
+    (set-strategic-number sn-total-number-explorers 1)
+    (set-strategic-number sn-number-explore-groups 1)
+    (set-strategic-number sn-initial-exploration-required 0)
+    (set-strategic-number sn-home-exploration-time 20)
+    (set-strategic-number sn-gather-idle-soldiers-at-center 0)
+    (set-strategic-number sn-gather-defense-units 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 0)
 )
 
 ; --- Rule 4: Dark Age Economy, Builders, Boar Hunting & Repair ---
 (defrule
     (true)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 30)
-    (set-strategic-number sn-wood-gatherer-percentage 26)
-    (set-strategic-number sn-gold-gatherer-percentage 22)
-    (set-strategic-number sn-stone-gatherer-percentage 22)
+    (set-strategic-number sn-food-gatherer-percentage 65)
+    (set-strategic-number sn-wood-gatherer-percentage 35)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
     (set-strategic-number sn-percent-civilian-gatherers 75)
     (set-strategic-number sn-percent-civilian-builders 25)
     (set-strategic-number sn-cap-civilian-builders 16)
@@ -338,9 +342,9 @@
 =>
     (set-strategic-number sn-enable-patrol-attack 1)
     (set-strategic-number sn-attack-intelligence 1)
-    (set-strategic-number sn-gather-idle-soldiers-at-center 1)
-    (set-strategic-number sn-gather-defense-units 1)
-    (set-strategic-number sn-task-ungrouped-soldiers 1)
+    (set-strategic-number sn-gather-idle-soldiers-at-center 0)
+    (set-strategic-number sn-gather-defense-units 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 0)
     (set-strategic-number sn-coop-share-information 1)
     (set-strategic-number sn-coop-share-attacking 1)
     (set-strategic-number sn-building-targeting-mode 1)
@@ -521,7 +525,7 @@
     (set-strategic-number sn-camp-max-distance 150)
     (set-strategic-number sn-lumber-camp-max-distance 100)
     (set-strategic-number sn-mining-camp-max-distance 150)
-    (set-strategic-number sn-home-exploration-time 480)
+    (set-strategic-number sn-home-exploration-time 20)
     (disable-self)
 )
 
@@ -641,27 +645,51 @@
 
 ; ------------------------------------------------------------
 ; 1. DARK AGE MANPOWER (Opening Economy, Early Gold & Stone)
-; ------------------------------------------------------------
-; 1. DARK AGE MANPOWER (Balanced 4-Way Macro from the Beginning)
-; Food, Wood, Gold, and Stone are all collected from the beginning with similar manpower!
+; Phase 1: Opening (vills < 8): 6 on sheep + 1-2 on wood for zero-idle continuous villager production
 (defrule
     (current-age <= dark-age)
-    (unit-type-count-total villager < 12)
+    (unit-type-count-total villager < 8)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 34)
-    (set-strategic-number sn-wood-gatherer-percentage 26)
-    (set-strategic-number sn-gold-gatherer-percentage 20)
-    (set-strategic-number sn-stone-gatherer-percentage 20)
+    (set-strategic-number sn-food-gatherer-percentage 65)
+    (set-strategic-number sn-wood-gatherer-percentage 35)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
 )
 
+; Phase 2: Early Dark Age (vills 8-13): Mining Camps founded -> Active Gold & Stone collection begins!
 (defrule
     (current-age <= dark-age)
-    (unit-type-count-total villager >= 12)
+    (unit-type-count-total villager >= 8)
+    (unit-type-count-total villager < 14)
+    (food-amount < 400)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 30)
-    (set-strategic-number sn-wood-gatherer-percentage 26)
-    (set-strategic-number sn-gold-gatherer-percentage 22)
-    (set-strategic-number sn-stone-gatherer-percentage 22)
+    (set-strategic-number sn-food-gatherer-percentage 48)
+    (set-strategic-number sn-wood-gatherer-percentage 24)
+    (set-strategic-number sn-gold-gatherer-percentage 14)
+    (set-strategic-number sn-stone-gatherer-percentage 14)
+)
+
+; Phase 3: Mid/Late Dark Age (vills >= 14): Balanced 4-way macro with steady Gold & Stone stockpiling
+(defrule
+    (current-age <= dark-age)
+    (unit-type-count-total villager >= 14)
+    (food-amount < 400)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 46)
+    (set-strategic-number sn-wood-gatherer-percentage 24)
+    (set-strategic-number sn-gold-gatherer-percentage 15)
+    (set-strategic-number sn-stone-gatherer-percentage 15)
+)
+
+; Phase 4: Feudal Age Advance Sprint (food >= 400): Surge food gatherers to hit 500 food immediately!
+(defrule
+    (current-age <= dark-age)
+    (food-amount >= 400)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 60)
+    (set-strategic-number sn-wood-gatherer-percentage 16)
+    (set-strategic-number sn-gold-gatherer-percentage 12)
+    (set-strategic-number sn-stone-gatherer-percentage 12)
 )
 
 ; ------------------------------------------------------------
@@ -1035,9 +1063,26 @@
 ; SECTION 7: DARK AGE HUMAN BUILD ORDER (The 21-Pop Standard)
 ; ============================================================
 
+; Priority #1: Advance to Feudal Age the moment 500 Food and 2 Dark Age buildings are available
+(defrule
+    (current-age <= dark-age)
+    (can-research feudal-age)
+=>
+    (research feudal-age)
+    (set-strategic-number sn-gold-gatherer-percentage 16)
+    (set-strategic-number sn-stone-gatherer-percentage 12)
+    (set-strategic-number sn-camp-max-distance 120)
+    (set-strategic-number sn-mining-camp-max-distance 120)
+    (chat-to-all "ZULFIKAR: Advancing to Feudal Age!")
+)
+
+; Train villagers continuously up to target, but reserve food for Feudal Age when food approaches 500
 (defrule
     (current-age <= dark-age)
     (unit-type-count-total villager < gl-dark-age-vils)
+    (not (can-research feudal-age))
+    (or (food-amount < 480)
+        (unit-type-count-total villager < 16))
     (can-train villager)
 =>
     (train villager)
@@ -1056,7 +1101,6 @@
 (defrule
     (current-age <= dark-age)
     (building-type-count-total lumber-camp < 1)
-    (resource-found wood)
     (can-build lumber-camp)
 =>
     (build lumber-camp)
@@ -1065,7 +1109,7 @@
 (defrule
     (current-age <= dark-age)
     (building-type-count-total mill < 1)
-    (unit-type-count-total villager >= 10)
+    (unit-type-count-total villager >= 8)
     (can-build mill)
 =>
     (build mill)
@@ -1135,15 +1179,16 @@
     (chat-to-all "ZULFIKAR: Stone Quarry Camp established from the beginning.")
 )
 
-; Barracks in late Dark Age (for open maps or non-FC styles)
+; Universal Dark Age Barracks (satisfies 2-building Feudal requirement across all maps)
 (defrule
     (current-age <= dark-age)
-    (goal gl-map-style style-open)
-    (unit-type-count-total villager >= 19)
+    (building-type-count-total lumber-camp >= 1)
+    (unit-type-count-total villager >= 13)
     (building-type-count-total barracks < 1)
     (can-build barracks)
 =>
     (build barracks)
+    (chat-to-all "ZULFIKAR: Dark Age Barracks established (Feudal age requirement ready).")
 )
 
 ; Loom right before Feudal Age (or emergency)
@@ -3164,11 +3209,28 @@
 ; ============================================================
 
 ; --- PEACETIME SANCTUARY & PERIMETER DEFENSE (Base Camp) ---
-; When not on an active offensive wave (gl-attack-status == 0), military units
+; In Dark Age, the starting Scout Cavalry MUST freely explore the map outward
+; and NEVER be pulled back to base by defense gathering or center idling!
+(defrule
+    (current-age <= dark-age)
+=>
+    (set-strategic-number sn-number-attack-groups 0)
+    (set-strategic-number sn-percent-attack-soldiers 0)
+    (set-strategic-number sn-gather-idle-soldiers-at-center 0)
+    (set-strategic-number sn-gather-defense-units 0)
+    (set-strategic-number sn-task-ungrouped-soldiers 0)
+    (set-strategic-number sn-total-number-explorers 1)
+    (set-strategic-number sn-number-explore-groups 1)
+    (set-strategic-number sn-initial-exploration-required 0)
+    (set-strategic-number sn-home-exploration-time 20)
+)
+
+; From Feudal Age onwards: when not on an active offensive wave (gl-attack-status == 0), military units
 ; remain at base under Citadel / Castle arrow protection and near Monks for healing.
 ; sn-percent-attack-soldiers 0 and sn-number-attack-groups 0 strictly PREVENTS single-unit trickling.
 ; sn-task-ungrouped-soldiers 1 empowers all idle soldiers to actively defend lumberjacks, miners, and farms!
 (defrule
+    (current-age >= feudal-age)
     (goal gl-attack-status 0)
     (not (town-under-attack))
 =>
