@@ -317,10 +317,10 @@
 (defrule
     (true)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 65)
-    (set-strategic-number sn-wood-gatherer-percentage 35)
-    (set-strategic-number sn-gold-gatherer-percentage 0)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-food-gatherer-percentage 30)
+    (set-strategic-number sn-wood-gatherer-percentage 26)
+    (set-strategic-number sn-gold-gatherer-percentage 22)
+    (set-strategic-number sn-stone-gatherer-percentage 22)
     (set-strategic-number sn-percent-civilian-gatherers 75)
     (set-strategic-number sn-percent-civilian-builders 25)
     (set-strategic-number sn-cap-civilian-builders 16)
@@ -642,40 +642,26 @@
 ; ------------------------------------------------------------
 ; 1. DARK AGE MANPOWER (Opening Economy, Early Gold & Stone)
 ; ------------------------------------------------------------
+; 1. DARK AGE MANPOWER (Balanced 4-Way Macro from the Beginning)
+; Food, Wood, Gold, and Stone are all collected from the beginning with similar manpower!
 (defrule
     (current-age <= dark-age)
-    (unit-type-count-total villager < 14)
-    (food-amount < 350)
+    (unit-type-count-total villager < 12)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 62)
-    (set-strategic-number sn-wood-gatherer-percentage 38)
-    (set-strategic-number sn-gold-gatherer-percentage 0)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-food-gatherer-percentage 34)
+    (set-strategic-number sn-wood-gatherer-percentage 26)
+    (set-strategic-number sn-gold-gatherer-percentage 20)
+    (set-strategic-number sn-stone-gatherer-percentage 20)
 )
 
-; Mid Dark Age (vills 14-17): Dispatch 3 villagers to Gold Mining immediately
 (defrule
     (current-age <= dark-age)
-    (unit-type-count-total villager >= 14)
-    (unit-type-count-total villager < 18)
-    (food-amount < 350)
+    (unit-type-count-total villager >= 12)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 55)
-    (set-strategic-number sn-wood-gatherer-percentage 30)
-    (set-strategic-number sn-gold-gatherer-percentage 15)
-    (set-strategic-number sn-stone-gatherer-percentage 0)
-)
-
-; Late Dark Age (vills >= 18 or food >= 350): Dispatch gatherers to BOTH Gold & Stone!
-(defrule
-    (current-age <= dark-age)
-    (or (unit-type-count-total villager >= 18)
-        (food-amount >= 350))
-=>
-    (set-strategic-number sn-food-gatherer-percentage 46)
-    (set-strategic-number sn-wood-gatherer-percentage 28)
-    (set-strategic-number sn-gold-gatherer-percentage 14)
-    (set-strategic-number sn-stone-gatherer-percentage 12)
+    (set-strategic-number sn-food-gatherer-percentage 30)
+    (set-strategic-number sn-wood-gatherer-percentage 26)
+    (set-strategic-number sn-gold-gatherer-percentage 22)
+    (set-strategic-number sn-stone-gatherer-percentage 22)
 )
 
 ; ------------------------------------------------------------
@@ -1097,58 +1083,56 @@
     (build farm)
 )
 
-; Mining Camp #1 (Gold) in Mid Dark Age (villagers >= 14)
+; Mining Camp #1 (Gold) from Early Dark Age (villagers >= 8)
 (defrule
     (current-age <= dark-age)
-    (unit-type-count-total villager >= 14)
+    (unit-type-count-total villager >= 8)
     (building-type-count-total lumber-camp >= 1)
-    (building-type-count-total mill >= 1)
     (building-type-count-total mining-camp < 1)
 =>
     (set-strategic-number sn-allow-adjacent-dropsites 1)
     (set-strategic-number sn-camp-max-distance 120)
     (set-strategic-number sn-mining-camp-max-distance 120)
-    (set-strategic-number sn-maximum-gold-drop-distance 40)
-    (set-strategic-number sn-stone-dropsite-distance 3)
-    (set-strategic-number sn-gold-dropsite-distance 40)
+    (set-strategic-number sn-maximum-gold-drop-distance 45)
+    (set-strategic-number sn-maximum-stone-drop-distance 45)
+    (set-strategic-number sn-gold-dropsite-distance 45)
+    (set-strategic-number sn-stone-dropsite-distance 45)
 )
 
 (defrule
     (current-age <= dark-age)
-    (unit-type-count-total villager >= 14)
+    (unit-type-count-total villager >= 8)
     (building-type-count-total lumber-camp >= 1)
-    (building-type-count-total mill >= 1)
     (building-type-count-total mining-camp < 1)
     (can-build mining-camp)
 =>
     (build mining-camp)
-    (chat-to-all "ZULFIKAR: Gold Mining Camp established in Dark Age.")
+    (chat-to-all "ZULFIKAR: Gold Mining Camp established from the beginning.")
 )
 
-; Mining Camp #2 (Stone) in Late Dark Age (villagers >= 18 or food >= 350)
+; Mining Camp #2 (Stone) from Early Dark Age (villagers >= 10)
 (defrule
     (current-age <= dark-age)
-    (or (unit-type-count-total villager >= 18)
-        (food-amount >= 350))
+    (unit-type-count-total villager >= 10)
     (building-type-count-total mining-camp == 1)
 =>
     (set-strategic-number sn-allow-adjacent-dropsites 1)
     (set-strategic-number sn-camp-max-distance 120)
     (set-strategic-number sn-mining-camp-max-distance 120)
-    (set-strategic-number sn-maximum-stone-drop-distance 40)
-    (set-strategic-number sn-gold-dropsite-distance 3)
-    (set-strategic-number sn-stone-dropsite-distance 40)
+    (set-strategic-number sn-maximum-gold-drop-distance 45)
+    (set-strategic-number sn-maximum-stone-drop-distance 45)
+    (set-strategic-number sn-gold-dropsite-distance 45)
+    (set-strategic-number sn-stone-dropsite-distance 45)
 )
 
 (defrule
     (current-age <= dark-age)
-    (or (unit-type-count-total villager >= 18)
-        (food-amount >= 350))
+    (unit-type-count-total villager >= 10)
     (building-type-count-total mining-camp == 1)
     (can-build mining-camp)
 =>
     (build mining-camp)
-    (chat-to-all "ZULFIKAR: Stone Quarry Camp established in Dark Age.")
+    (chat-to-all "ZULFIKAR: Stone Quarry Camp established from the beginning.")
 )
 
 ; Barracks in late Dark Age (for open maps or non-FC styles)
@@ -1281,9 +1265,10 @@
     (set-strategic-number sn-allow-adjacent-dropsites 1)
     (set-strategic-number sn-camp-max-distance 120)
     (set-strategic-number sn-mining-camp-max-distance 120)
-    (set-strategic-number sn-maximum-gold-drop-distance 40)
-    (set-strategic-number sn-stone-dropsite-distance 3)
-    (set-strategic-number sn-gold-dropsite-distance 40)
+    (set-strategic-number sn-maximum-gold-drop-distance 45)
+    (set-strategic-number sn-maximum-stone-drop-distance 45)
+    (set-strategic-number sn-gold-dropsite-distance 45)
+    (set-strategic-number sn-stone-dropsite-distance 45)
 )
 
 (defrule
@@ -1303,9 +1288,10 @@
     (set-strategic-number sn-allow-adjacent-dropsites 1)
     (set-strategic-number sn-camp-max-distance 120)
     (set-strategic-number sn-mining-camp-max-distance 120)
-    (set-strategic-number sn-maximum-stone-drop-distance 40)
-    (set-strategic-number sn-gold-dropsite-distance 3)
-    (set-strategic-number sn-stone-dropsite-distance 40)
+    (set-strategic-number sn-maximum-gold-drop-distance 45)
+    (set-strategic-number sn-maximum-stone-drop-distance 45)
+    (set-strategic-number sn-gold-dropsite-distance 45)
+    (set-strategic-number sn-stone-dropsite-distance 45)
 )
 
 (defrule
@@ -1417,10 +1403,10 @@
 (defrule
     (current-age >= feudal-age)
     (building-type-count-total market < 1)
-    (building-type-count-total blacksmith >= 1)
     (can-build market)
 =>
     (build market)
+    (chat-to-all "ZULFIKAR: Commerce & Trade Market established in Feudal Age.")
 )
 
 (defrule
@@ -3826,19 +3812,39 @@
 ; ============================================================
 
 ; Trade Carts (scaled by map size in team games)
+; Feudal Age Land Trade Carts to Collect Gold
 (defrule
-    (current-age >= castle-age)
-    (players-building-type-count any-ally market >= 1)
-    (unit-type-count-total trade-cart < 15)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (or (player-in-game any-ally)
+    (or (players-building-type-count any-ally market >= 1)
+        (players-building-type-count any-neutral market >= 1)))
+    (unit-type-count-total trade-cart < 6)
     (can-train trade-cart)
 =>
     (train trade-cart)
 )
 
+; Castle Age Land Trade Carts
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (or (player-in-game any-ally)
+    (or (players-building-type-count any-ally market >= 1)
+        (players-building-type-count any-neutral market >= 1)))
+    (unit-type-count-total trade-cart < 18)
+    (can-train trade-cart)
+=>
+    (train trade-cart)
+)
+
+; Imperial Age Land Trade Carts
 (defrule
     (current-age >= imperial-age)
-    (players-building-type-count any-ally market >= 1)
-    (unit-type-count-total trade-cart < 28)
+    (or (player-in-game any-ally)
+    (or (players-building-type-count any-ally market >= 1)
+        (players-building-type-count any-neutral market >= 1)))
+    (unit-type-count-total trade-cart < 35)
     (can-train trade-cart)
 =>
     (train trade-cart)
@@ -3847,8 +3853,10 @@
 (defrule
     (goal gl-map-size size-large)
     (current-age >= imperial-age)
-    (players-building-type-count any-ally market >= 1)
-    (unit-type-count-total trade-cart < 38)
+    (or (player-in-game any-ally)
+    (or (players-building-type-count any-ally market >= 1)
+        (players-building-type-count any-neutral market >= 1)))
+    (unit-type-count-total trade-cart < 48)
     (can-train trade-cart)
 =>
     (train trade-cart)
@@ -4164,10 +4172,43 @@
 )
 
 ; Water Trade Cogs for Allied Naval Trade
+; Water Trade Cogs for Naval Trade to Collect Gold
+; 1. Feudal Age Naval Trade
 (defrule
-    (player-in-game any-ally)
+    (current-age >= feudal-age)
+    (current-age < castle-age)
+    (or (player-in-game any-ally)
+    (or (players-building-type-count any-ally dock >= 1)
+        (players-building-type-count any-neutral dock >= 1)))
     (building-type-count-total dock >= 1)
-    (unit-type-count-total trade-cog < 15)
+    (unit-type-count-total trade-cog < 5)
+    (can-train trade-cog)
+=>
+    (train trade-cog)
+)
+
+; 2. Castle Age Naval Trade
+(defrule
+    (current-age >= castle-age)
+    (current-age < imperial-age)
+    (or (player-in-game any-ally)
+    (or (players-building-type-count any-ally dock >= 1)
+        (players-building-type-count any-neutral dock >= 1)))
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total trade-cog < 12)
+    (can-train trade-cog)
+=>
+    (train trade-cog)
+)
+
+; 3. Imperial Age Naval Trade
+(defrule
+    (current-age >= imperial-age)
+    (or (player-in-game any-ally)
+    (or (players-building-type-count any-ally dock >= 1)
+        (players-building-type-count any-neutral dock >= 1)))
+    (building-type-count-total dock >= 1)
+    (unit-type-count-total trade-cog < 20)
     (can-train trade-cog)
 =>
     (train trade-cog)
